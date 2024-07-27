@@ -6,8 +6,8 @@ const CounterComponent = () => {
   return (
     <div>
       <p>Currently, the count is {count}</p>
-      <button onClick={() => setCount(count - 1)}>Subtract</button>
-      <button onClick={() => setCount(count + 1)}>Add</button>
+      <button onClick={() => {setCount(count - 1)}}>Subtract</button>
+      <button onClick={() => {setCount(count + 1)}}>Add</button>
     </div>
   );
 }
