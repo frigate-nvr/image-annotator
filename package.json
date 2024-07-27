@@ -1,0 +1,35 @@
+{
+  "name": "@frigate-nvr/image-annotator",
+  "version": "1.0.0",
+  "description": "image annotator designed for frigate nvr",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "author": "blakeblackshear",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@chromatic-com/storybook": "^1.6.1",
+    "@storybook/addon-essentials": "^8.2.6",
+    "@storybook/addon-interactions": "^8.2.6",
+    "@storybook/addon-links": "^8.2.6",
+    "@storybook/addon-onboarding": "^8.2.6",
+    "@storybook/blocks": "^8.2.6",
+    "@storybook/react": "^8.2.6",
+    "@storybook/react-vite": "^8.2.6",
+    "@storybook/test": "^8.2.6",
+    "@types/react": "^18.3.3",
+    "globals": "^15.8.0",
+    "prop-types": "^15.8.1",
+    "react": "^18.3.1",
+    "storybook": "^8.2.6",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.5"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}
