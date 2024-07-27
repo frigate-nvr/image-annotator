@@ -23,6 +23,7 @@
     "@storybook/react": "^8.2.6",
     "@storybook/react-vite": "^8.2.6",
     "@storybook/test": "^8.2.6",
+    "@tailwindcss/forms": "^0.5.7",
     "@tsconfig/vite-react": "^3.0.2",
     "@types/eslint__js": "^8.42.3",
     "@types/react": "^18.3.3",
@@ -44,5 +45,11 @@
   },
   "peerDependencies": {
     "react": "^18.2.0"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.1.2",
+    "react-rnd": "^10.4.11",
+    "ulid": "^2.3.0",
+    "use-debounce": "^10.0.1"
   }
 }
