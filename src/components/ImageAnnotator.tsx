@@ -24,6 +24,7 @@ import { ulid } from "ulid";
 import { useDebouncedCallback } from "use-debounce";
 
 import Button from "./Button";
+import Crosshairs from "./Crosshairs";
 import { InfoDialog } from "./InfoDialog";
 import { LabelDialog } from "./LabelDialog";
 // import { TutorialDialog } from "../dialog/TutorialDialog";
@@ -52,11 +53,6 @@ interface EditorState {
   showDelete: boolean;
   showTutorial: boolean;
   showConfirmDeleteFalsePositive: boolean;
-}
-
-interface CrosshairsState {
-  top: number;
-  left: number;
 }
 
 export interface Annotation {
@@ -142,11 +138,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     imgHeight: 1,
     imgWidth: 1,
     zoom: 2,
-  });
-
-  const [crosshairs, setCrosshairs] = useState<CrosshairsState>({
-    top: 0,
-    left: 0,
   });
 
   const ref = useRef<HTMLImageElement>(null);
@@ -324,14 +315,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const onMouseMove: MouseEventHandler<HTMLImageElement> = (e) => {
-    if (state.createMode) {
-      const x = e.pageX - (ref.current?.getBoundingClientRect().left ?? 0);
-      const y = e.pageY - (ref.current?.getBoundingClientRect().top ?? 0);
-      setCrosshairs({
-        left: x,
-        top: y,
-      });
-    }
     if (state.drawingMode) {
       setBBoxes((prev) =>
         prev.map((a) => {
@@ -726,13 +709,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           </div>
           <div ref={editorRef} className="flex-auto grid place-content-center">
             <div
-              className={`relative ${
-                state.createMode ? "cursor-crosshair" : ""
-              }`}
-              style={{
-                width: state.width,
-                height: state.height,
-              }}
+              className="col-start-1 row-start-1"
               onMouseDown={onMouseDown}
               onMouseUp={onMouseUp}
               onMouseMove={onMouseMove}
@@ -897,29 +874,8 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     </div>
                 </Rnd>
               ))}
-              <div
-                className="absolute z-2 border-l-2 border-dashed border-black top-0"
-                style={{
-                  left: crosshairs.left,
-                  height: state.height,
-                  visibility:
-                    state.createMode && !state.drawingMode
-                      ? "visible"
-                      : "hidden",
-                }}
-              ></div>
-              <div
-                className="absolute z-2 border-t-2 border-dashed border-black left-0"
-                style={{
-                  top: crosshairs.top,
-                  width: state.width,
-                  visibility:
-                    state.createMode && !state.drawingMode
-                      ? "visible"
-                      : "hidden",
-                }}
-              ></div>
             </div>
+            <Crosshairs className="col-start-1 row-start-1" show={state.createMode && !state.drawingMode}/>
           </div>
         </div>
         <LabelDialog
