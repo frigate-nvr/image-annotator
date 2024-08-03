@@ -17,9 +17,7 @@ import {
 //   useTransformContext,
 // } from "react-zoom-pan-pinch";
 
-import classNames from "classnames";
-// import Link from "next/link";
-import { Position, DraggableData, Rnd } from "react-rnd";
+import { Position, DraggableData } from "react-rnd";
 import { ulid } from "ulid";
 import { useDebouncedCallback } from "use-debounce";
 
@@ -27,11 +25,10 @@ import Button from "./Button";
 import Crosshairs from "./Crosshairs";
 import { InfoDialog } from "./InfoDialog";
 import { LabelDialog } from "./LabelDialog";
-// import { TutorialDialog } from "../dialog/TutorialDialog";
 import { VerifyDialog } from "./VerifyDialog";
 import FormElement from "./FormElement";
 import { FormElementBox } from "./FormElementBox";
-// import { AppConfig } from "../utils/AppConfig";
+import BoundingBox, { BoundingBoxType } from "./BoundingBox";
 
 interface EditorState {
   createMode: boolean;
@@ -83,7 +80,7 @@ interface IImageAnnotationProps {
   save: (
     annotations: Annotation[],
     deleteFalsePositive: boolean,
-    verified: boolean
+    verified: boolean,
   ) => void;
   excludeImage: () => void;
   imageUrl: string;
@@ -174,14 +171,18 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       });
       setBBoxes((prev) => prev.map((a) => ({ ...a })));
     },
-    [state]
+    [state],
   );
 
-  const handleResize: (this: Window, ev: UIEvent) => void = useDebouncedCallback(() => {
-    if (state.height > window.innerHeight || state.width > window.innerWidth) {
-      changeZoom(0.0);
-    }
-  }, 200);
+  const handleResize: (this: Window, ev: UIEvent) => void =
+    useDebouncedCallback(() => {
+      if (
+        state.height > window.innerHeight ||
+        state.width > window.innerWidth
+      ) {
+        changeZoom(0.0);
+      }
+    }, 200);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
@@ -195,7 +196,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const onResizeStop = (
     elem: HTMLElement,
     position: Position,
-    boxId: string
+    boxId: string,
   ) => {
     setBBoxes((prev) =>
       prev.map((a) => {
@@ -209,7 +210,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
   };
   const onDragStop = (d: DraggableData, boxId: string) => {
@@ -223,11 +224,12 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
   };
 
   const onMouseDown: MouseEventHandler<HTMLImageElement> = (e) => {
+    console.log("onMouseDown");
     if (state.createMode) {
       const x =
         (e.pageX - (ref.current?.getBoundingClientRect().left ?? 0)) /
@@ -279,7 +281,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
             if (
               Math.min(
                 Math.abs(state.drawStartX - x),
-                Math.abs(state.drawStartY - y)
+                Math.abs(state.drawStartY - y),
               ) > 0.001
             ) {
               let left = Math.min(state.drawStartX, x);
@@ -309,7 +311,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
             out.push(a);
           }
           return out;
-        }, [])
+        }, []),
       );
     }
   };
@@ -335,7 +337,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
             };
           }
           return a;
-        })
+        }),
       );
     }
   };
@@ -362,16 +364,16 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
             ...a,
             x: Math.min(
               1.0 - a.w,
-              Math.max(0.0, a.x + horizontal / state.width)
+              Math.max(0.0, a.x + horizontal / state.width),
             ),
             y: Math.min(
               1.0 - a.h,
-              Math.max(0.0, a.y + vertical / state.height)
+              Math.max(0.0, a.y + vertical / state.height),
             ),
           };
         }
         return a;
-      })
+      }),
     );
   };
 
@@ -386,7 +388,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
   };
 
@@ -400,13 +402,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
   };
 
   const cycleLabel = (boxId: string, reverse = false) => {
     const currentLabelIndex = props.labels.findIndex(
-      (label) => state.selectedLabel === label
+      (label) => state.selectedLabel === label,
     );
     const lastIndex = props.labels.length - 1;
 
@@ -426,7 +428,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
     setState({ ...state, selectedLabel: newLabel });
   };
@@ -575,7 +577,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     setBBoxes(
       props.annotations
         .concat(props.suggestions)
-        .sort((a, b) => b.w * b.h - a.w * a.h)
+        .sort((a, b) => b.w * b.h - a.w * a.h),
     );
     setFPBoxes(props.falsePositives.sort((a, b) => b.w * b.h - a.w * a.h));
   };
@@ -592,7 +594,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           };
         }
         return a;
-      })
+      }),
     );
   };
 
@@ -601,433 +603,353 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     setBBoxes((prev) => prev.filter((a) => a.label));
   };
 
-  const boxClass = (boxId: string, falsePositive: boolean) => {
-    let colorClass = falsePositive ? "border-[#c95d55]" : "border-white";
-    const box = getBox(boxId);
-    if (box?.suggestion) {
-      colorClass = "border-[#3dd8ff]";
-    }
-    if (boxId === state.selectedBox) {
-      const selectedColor = box?.difficult
-        ? "border-[#fae352]"
-        : "border-[#84cc16]";
-      colorClass = falsePositive ? "border-[#cc2216]" : selectedColor;
-    } else {
-      if (box?.difficult) {
-        colorClass = "border-[#ad9e3d]";
-      }
-    }
-
-    return classNames("flex", "border-2", "border-solid", colorClass);
-  };
-
   const defaultZIndex = state.showBoxes ? 0 : -1;
 
   return (
     <>
-        <div
-          className="flex flex-col h-screen overflow-hidden bg-slate-900 min-w-[600px]"
-          onKeyDown={onKeyDown}
-          tabIndex={0}
-        >
-          <div className="flex-initial p-1 flex bg-slate-300">
-            <div className="flex-initial">
-              <button type="button" onClick={props.nextImage}>
-                <Button secondary sm>
-                  Skip
-                </Button>
-              </button>
-            </div>
-            <div className="flex-auto flex justify-center">
-              <button type="button" onClick={() => { changeZoom(-0.1); }}>
-                <Button>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-                    />
-                  </svg>
-                </Button>
-              </button>
-              <span className="flex items-center mx-2">
-                {Math.round(state.zoom * 100)}%
-              </span>
-              <button type="button" onClick={() => { changeZoom(0.1); }}>
-                <Button>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-                    />
-                  </svg>
-                </Button>
-              </button>
-              <button type="button" onClick={clickCreate}>
-                <Button secondary sm>
-                  Add (w)
-                </Button>
-              </button>
-            </div>
-            <div className="flex-initial">
-              <button onClick={() => { setState({ ...state, showVerify: true }); }}>
-                <Button sm>Verify &amp; Save</Button>
-              </button>
-              <button
-                onClick={() => { props.save(bboxes, fpboxes.length === 0, false); }}
-              >
-                <Button green sm>
-                  Save
-                </Button>
-              </button>
-              <button onClick={() => { setState({ ...state, showDelete: true }); }}>
-                <Button red sm>
-                  Exclude
-                </Button>
-              </button>
-              <button onClick={() => { setState({ ...state, showHelp: true }); }}>
-                <Button sm secondary>
-                  ?
-                </Button>
-              </button>
-            </div>
+      <div
+        className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
+        onKeyDown={onKeyDown}
+        tabIndex={0}
+      >
+        <div className="flex flex-initial bg-slate-300 p-1">
+          <div className="flex-initial">
+            <button type="button" onClick={props.nextImage}>
+              <Button secondary sm>
+                Skip
+              </Button>
+            </button>
           </div>
-          <div ref={editorRef} className="flex-auto grid place-content-center">
-            <div
-              className="col-start-1 row-start-1"
-              onMouseDown={onMouseDown}
-              onMouseUp={onMouseUp}
-              onMouseMove={onMouseMove}
+          <div className="flex flex-auto justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                changeZoom(-0.1);
+              }}
             >
-              <img
-                ref={ref}
-                className="h-full w-full"
-                alt="annotate"
-                src={props.imageUrl}
-                onLoad={onLoad}
-              />
-              {fpboxes.map((box) => (
-                <Rnd
-                  key={box.id}
-                  className={boxClass(box.id, true)}
-                  style={{
-                    zIndex: box.id === state.selectedBox ? 1 : defaultZIndex,
-                  }}
-                  bounds="parent"
-                  position={{
-                    x: box.x * state.width,
-                    y: box.y * state.height,
-                  }}
-                  size={{
-                    width: box.w * state.width,
-                    height: box.h * state.height,
-                  }}
-                  disableDragging={true}
-                  enableResizing={false}
-                  onMouseDown={(e: { stopPropagation: () => void }) => {
-                    if (!state.createMode) {
-                      onClickBBox(box.id);
-                      e.stopPropagation();
-                    }
-                  }}
+              <Button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                    <mark
-                      className={`line-through decoration-2 absolute bottom-[-25px] right-[-2px] ${
-                        box.id === state.selectedBox
-                          ? "bg-[#cc2216]"
-                          : "bg-[#c95d55]"
-                      }`}
-                    >
-                      {box.label}
-                    </mark>
-                    <div
-                      className="w-6 h-6 flex items-center justify-center rounded-full bg-red-400 flex-shrink-0 absolute top-[-13px] right-[-27px] z-20 cursor-pointer"
-                      onClick={() =>
-                        { setState({
-                          ...state,
-                          showConfirmDeleteFalsePositive: true,
-                        }); }
-                      }
-                      style={{
-                        visibility:
-                          box.id === state.selectedBox ? "visible" : "hidden",
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M18 12H6"
-                        />
-                      </svg>
-                    </div>
-                </Rnd>
-              ))}
-              {bboxes.map((box) => (
-                <Rnd
-                  key={box.id}
-                  className={boxClass(box.id, false)}
-                  style={{
-                    zIndex: box.id === state.selectedBox ? 1 : defaultZIndex,
-                  }}
-                  bounds="parent"
-                  position={{
-                    x: box.x * state.width,
-                    y: box.y * state.height,
-                  }}
-                  size={{
-                    width: box.w * state.width,
-                    height: box.h * state.height,
-                  }}
-                  onDragStop={(_e, d) => { onDragStop(d, box.id); }}
-                  onResizeStop={(
-                    _e,
-                    _d,
-                    r: HTMLElement,
-                    _delta,
-                    p
-                  ) => { onResizeStop(r, p, box.id); }}
-                  disableDragging={state.createMode}
-                  onMouseDown={(e: { stopPropagation: () => void }) => {
-                    if (!state.createMode) {
-                      onClickBBox(box.id);
-                      e.stopPropagation();
-                    }
-                  }}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+                  />
+                </svg>
+              </Button>
+            </button>
+            <span className="mx-2 flex items-center">
+              {Math.round(state.zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                changeZoom(0.1);
+              }}
+            >
+              <Button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                    <mark
-                      className={`absolute bottom-[-25px] right-[-2px] ${
-                        box.id === state.selectedBox
-                          ? "bg-[#84cc16]"
-                          : "bg-white"
-                      }`}
-                    >
-                      {box.label}
-                    </mark>
-                    <div
-                      className="w-6 h-6 flex items-center justify-center rounded-full bg-red-400 flex-shrink-0 absolute top-[-13px] right-[-27px] z-20 cursor-pointer"
-                      onClick={() => { deleteBox(box.id); }}
-                      style={{
-                        visibility:
-                          box.id === state.selectedBox ? "visible" : "hidden",
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M18 12H6"
-                        />
-                      </svg>
-                    </div>
-                    <div
-                      className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-400 flex-shrink-0 absolute top-[14px] right-[-27px] z-20 cursor-pointer"
-                      onClick={() => { setState({ ...state, showLabeler: true }); }}
-                      style={{
-                        visibility:
-                          box.id === state.selectedBox ? "visible" : "hidden",
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                    </div>
-                </Rnd>
-              ))}
-            </div>
-            <Crosshairs className="col-start-1 row-start-1" show={state.createMode && !state.drawingMode}/>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                  />
+                </svg>
+              </Button>
+            </button>
+            <button type="button" onClick={clickCreate}>
+              <Button secondary sm>
+                Add (w)
+              </Button>
+            </button>
           </div>
-        </div>
-        <LabelDialog
-          title="Annotate"
-          show={state.showLabeler}
-          cancelText="Cancel"
-          button={
-            <button type="button" onClick={onSaveLabel}>
-              <Button sm green>
+          <div className="flex-initial">
+            <button
+              onClick={() => {
+                setState({ ...state, showVerify: true });
+              }}
+            >
+              <Button sm>Verify &amp; Save</Button>
+            </button>
+            <button
+              onClick={() => {
+                props.save(bboxes, fpboxes.length === 0, false);
+              }}
+            >
+              <Button green sm>
                 Save
               </Button>
             </button>
-          }
-          handleCancel={onCancelLabel}
-        >
-          <div className="my-2 grid grid-cols-1 gap-y-2">
-            <FormElement>
-              <select
-                value={state.selectedLabel}
-                onChange={(e) =>
-                  { setState({ ...state, selectedLabel: e.target.value }); }
-                }
-              >
-                {props.labels.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            </FormElement>
-            <FormElementBox htmlFor="difficult" text="Difficult?">
-              <input
-                id="difficult"
-                type="checkbox"
-                checked={state.difficult}
-                onChange={(e) =>
-                  { setState({ ...state, difficult: e.target.checked }); }
-                }
+            <button
+              onClick={() => {
+                setState({ ...state, showDelete: true });
+              }}
+            >
+              <Button red sm>
+                Exclude
+              </Button>
+            </button>
+            <button
+              onClick={() => {
+                setState({ ...state, showHelp: true });
+              }}
+            >
+              <Button sm secondary>
+                ?
+              </Button>
+            </button>
+          </div>
+        </div>
+        <div ref={editorRef} className="grid flex-auto place-content-center">
+          <div
+            className="grid place-content-center"
+            onMouseDown={onMouseDown}
+            onMouseUp={onMouseUp}
+            onMouseMove={onMouseMove}
+          >
+            <img
+              ref={ref}
+              className="col-start-1 row-start-1 h-full w-full"
+              alt="annotate"
+              src={props.imageUrl}
+              onLoad={onLoad}
+            />
+            {fpboxes.map((box) => (
+              <BoundingBox
+                type={BoundingBoxType.falsePositive}
+                label={box.label ?? ""}
+                key={box.id}
+                zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                x={box.x * state.width}
+                y={box.y * state.height}
+                w={box.w * state.width}
+                h={box.h * state.height}
+                selected={box.id === state.selectedBox}
+                onMouseDown={(e: { stopPropagation: () => void }) => {
+                  if (!state.createMode) {
+                    onClickBBox(box.id);
+                    e.stopPropagation();
+                  }
+                }}
+                onClickDelete={() => {
+                  setState({
+                    ...state,
+                    showConfirmDeleteFalsePositive: true,
+                  });
+                }}
               />
-            </FormElementBox>
-          </div>
-        </LabelDialog>
-        <InfoDialog
-          title="Keyboard shortcuts"
-          show={state.showHelp}
-          handleClose={() => { setState({ ...state, showHelp: false }); }}
-        >
-          <div className="grid grid-cols-2 gap-2 place-content-center w-full p-5">
-            {shortcuts.map((s) => (
-              <Fragment key={s.action}>
-                <div>{s.action}</div>
-                <div className="justify-self-end">
-                  {s.codes
-                    .map<React.ReactNode>((c) => (
-                      <span
-                        key={c}
-                        className="font-mono shadow-inner rounded-md p-1 bg-slate-100 text-xs"
-                      >
-                        {c}
-                      </span>
-                    ))
-                    .reduce((prev, curr) => [prev, " + ", curr])}
-                </div>
-              </Fragment>
             ))}
-          </div>
-        </InfoDialog>
-        <VerifyDialog
-          title="Are all objects in this image labeled?"
-          description=" "
-          handleCancel={() => { setState({ ...state, showVerify: false }); }}
-          show={state.showVerify}
-          cancelText="Cancel"
-          button={
-            <button
-              type="button"
-              onClick={() => {
-                props.save(bboxes, fpboxes.length === 0, true);
-                setState({ ...state, showVerify: false });
-              }}
-            >
-              <Button sm green>
-                Yes, all objects are labeled
-              </Button>
-            </button>
-          }
-        >
-          <ul className="list-disc list-inside">
-            {props.labels.map((o) => (
-              <li key={o}>{o}</li>
-            ))}
-          </ul>
-        </VerifyDialog>
-        <VerifyDialog
-          title="Are you sure you want to exclude this image?"
-          description=""
-          handleCancel={() => { setState({ ...state, showDelete: false }); }}
-          show={state.showDelete}
-          cancelText="Cancel"
-          button={
-            <button
-              type="button"
-              onClick={() => {
-                props.excludeImage();
-                setState({ ...state, showDelete: false });
-              }}
-            >
-              <Button sm red>
-                Yes, exclude
-              </Button>
-            </button>
-          }
-        >
-          Image will be excluded from training
-        </VerifyDialog>
-        <VerifyDialog
-          title="Are you sure you want to delete this reported false positive?"
-          description=" "
-          maxWidthClass="max-w-xl"
-          handleCancel={() =>
-            { setState({ ...state, showConfirmDeleteFalsePositive: false }); }
-          }
-          show={state.showConfirmDeleteFalsePositive}
-          cancelText="Cancel"
-          button={
-            <button
-              type="button"
-              onClick={() => {
-                if (state.selectedBox) {
-                  deleteFP(state.selectedBox);
+            {bboxes.map((box) => (
+              <BoundingBox
+                type={
+                  box.suggestion
+                    ? BoundingBoxType.suggestion
+                    : BoundingBoxType.truePositive
                 }
-                setState({
-                  ...state,
-                  showConfirmDeleteFalsePositive: false,
-                  selectedBox: undefined,
-                });
+                label={box.label ?? ""}
+                difficult={box.difficult}
+                key={box.id}
+                zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                x={box.x * state.width}
+                y={box.y * state.height}
+                w={box.w * state.width}
+                h={box.h * state.height}
+                selected={box.id === state.selectedBox}
+                onMouseDown={(e: { stopPropagation: () => void }) => {
+                  if (!state.createMode) {
+                    onClickBBox(box.id);
+                    e.stopPropagation();
+                  }
+                }}
+                onDragStop={(_e, d) => {
+                  onDragStop(d, box.id);
+                }}
+                onResizeStop={(_e, _d, r: HTMLElement, _delta, p) => {
+                  onResizeStop(r, p, box.id);
+                }}
+                onClickDelete={() => {
+                  deleteBox(box.id);
+                }}
+                onClickEdit={() => {
+                  setState({ ...state, showLabeler: true });
+                }}
+              />
+            ))}
+            <Crosshairs
+              className="col-start-1 row-start-1"
+              show={state.createMode && !state.drawingMode}
+            />
+          </div>
+        </div>
+      </div>
+      <LabelDialog
+        title="Annotate"
+        show={state.showLabeler}
+        cancelText="Cancel"
+        button={
+          <button type="button" onClick={onSaveLabel}>
+            <Button sm green>
+              Save
+            </Button>
+          </button>
+        }
+        handleCancel={onCancelLabel}
+      >
+        <div className="my-2 grid grid-cols-1 gap-y-2">
+          <FormElement>
+            <select
+              value={state.selectedLabel}
+              onChange={(e) => {
+                setState({ ...state, selectedLabel: e.target.value });
               }}
             >
-              <Button sm red>
-                Do not teach my model that this is not a{" "}
-                {state.selectedBox ? getFPLabel(state.selectedBox) : " "}
-              </Button>
-            </button>
-          }
-        >
-          <p>
-            False positives submitted from Frigate are used to improve your
-            model and should not be deleted unless you submitted them
-            accidentally.
-          </p>
-        </VerifyDialog>
-        </>
+              {props.labels.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FormElement>
+          <FormElementBox htmlFor="difficult" text="Difficult?">
+            <input
+              id="difficult"
+              type="checkbox"
+              checked={state.difficult}
+              onChange={(e) => {
+                setState({ ...state, difficult: e.target.checked });
+              }}
+            />
+          </FormElementBox>
+        </div>
+      </LabelDialog>
+      <InfoDialog
+        title="Keyboard shortcuts"
+        show={state.showHelp}
+        handleClose={() => {
+          setState({ ...state, showHelp: false });
+        }}
+      >
+        <div className="grid w-full grid-cols-2 place-content-center gap-2 p-5">
+          {shortcuts.map((s) => (
+            <Fragment key={s.action}>
+              <div>{s.action}</div>
+              <div className="justify-self-end">
+                {s.codes
+                  .map<React.ReactNode>((c) => (
+                    <span
+                      key={c}
+                      className="rounded-md bg-slate-100 p-1 font-mono text-xs shadow-inner"
+                    >
+                      {c}
+                    </span>
+                  ))
+                  .reduce((prev, curr) => [prev, " + ", curr])}
+              </div>
+            </Fragment>
+          ))}
+        </div>
+      </InfoDialog>
+      <VerifyDialog
+        title="Are all objects in this image labeled?"
+        description=" "
+        handleCancel={() => {
+          setState({ ...state, showVerify: false });
+        }}
+        show={state.showVerify}
+        cancelText="Cancel"
+        button={
+          <button
+            type="button"
+            onClick={() => {
+              props.save(bboxes, fpboxes.length === 0, true);
+              setState({ ...state, showVerify: false });
+            }}
+          >
+            <Button sm green>
+              Yes, all objects are labeled
+            </Button>
+          </button>
+        }
+      >
+        <ul className="list-inside list-disc">
+          {props.labels.map((o) => (
+            <li key={o}>{o}</li>
+          ))}
+        </ul>
+      </VerifyDialog>
+      <VerifyDialog
+        title="Are you sure you want to exclude this image?"
+        description=""
+        handleCancel={() => {
+          setState({ ...state, showDelete: false });
+        }}
+        show={state.showDelete}
+        cancelText="Cancel"
+        button={
+          <button
+            type="button"
+            onClick={() => {
+              props.excludeImage();
+              setState({ ...state, showDelete: false });
+            }}
+          >
+            <Button sm red>
+              Yes, exclude
+            </Button>
+          </button>
+        }
+      >
+        Image will be excluded from training
+      </VerifyDialog>
+      <VerifyDialog
+        title="Are you sure you want to delete this reported false positive?"
+        description=" "
+        maxWidthClass="max-w-xl"
+        handleCancel={() => {
+          setState({ ...state, showConfirmDeleteFalsePositive: false });
+        }}
+        show={state.showConfirmDeleteFalsePositive}
+        cancelText="Cancel"
+        button={
+          <button
+            type="button"
+            onClick={() => {
+              if (state.selectedBox) {
+                deleteFP(state.selectedBox);
+              }
+              setState({
+                ...state,
+                showConfirmDeleteFalsePositive: false,
+                selectedBox: undefined,
+              });
+            }}
+          >
+            <Button sm red>
+              Do not teach my model that this is not a{" "}
+              {state.selectedBox ? getFPLabel(state.selectedBox) : " "}
+            </Button>
+          </button>
+        }
+      >
+        <p>
+          False positives submitted from Frigate are used to improve your model
+          and should not be deleted unless you submitted them accidentally.
+        </p>
+      </VerifyDialog>
+    </>
   );
 };
 
