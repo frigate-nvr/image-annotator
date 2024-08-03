@@ -1,6 +1,7 @@
-import { MouseEventHandler } from "react";
+import { MouseEventHandler, useState } from "react";
 import { DraggableEventHandler } from "react-draggable";
 import { Rnd, RndResizeCallback } from "react-rnd";
+import { useTransformEffect } from "react-zoom-pan-pinch";
 
 export enum BoundingBoxType {
   truePositive,
@@ -20,27 +21,37 @@ interface IBoundingBoxProps {
   h: number;
   onDragStop?: DraggableEventHandler;
   onResizeStop?: RndResizeCallback;
-  onMouseDown: (e: MouseEvent) => void;
-  onClickDelete: MouseEventHandler<HTMLDivElement>;
+  onMouseDown?: (e: MouseEvent) => void;
+  onClickDelete?: MouseEventHandler<HTMLDivElement>;
   onClickEdit?: MouseEventHandler<HTMLDivElement>;
   label: string;
 }
 
 const selectedColors = {
-  [BoundingBoxType.truePositive]: '#84cc16',
-  [BoundingBoxType.falsePositive]: '#cc2216',
-  [BoundingBoxType.suggestion]: '#84cc16'
-}
+  [BoundingBoxType.truePositive]: "#84cc16",
+  [BoundingBoxType.falsePositive]: "#cc2216",
+  [BoundingBoxType.suggestion]: "#84cc16",
+};
 
 const unselectedColors = {
-  [BoundingBoxType.truePositive]: '#ffffff',
-  [BoundingBoxType.falsePositive]: '#c95d55',
-  [BoundingBoxType.suggestion]: '#3dd8ff'
-}
+  [BoundingBoxType.truePositive]: "#ffffff",
+  [BoundingBoxType.falsePositive]: "#c95d55",
+  [BoundingBoxType.suggestion]: "#3dd8ff",
+};
 
 const BoundingBox = (props: IBoundingBoxProps) => {
-  let color = props.selected ? selectedColors[props.type] : unselectedColors[props.type];
-  const editable = props.type !== BoundingBoxType.falsePositive
+  const [scale, setScale] = useState<number>(1);
+
+  useTransformEffect(({ state }) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    setScale(state.scale);
+  });
+
+  let color = props.selected
+    ? selectedColors[props.type]
+    : unselectedColors[props.type];
+
+  const editable = props.type !== BoundingBoxType.falsePositive;
 
   if (props.difficult) {
     color = props.selected ? "#fae352" : "#ad9e3d";
@@ -48,12 +59,14 @@ const BoundingBox = (props: IBoundingBoxProps) => {
 
   return (
     <Rnd
-      className={`${props.className ?? ""} border-2 border-solid`}
+      className={`${props.className ?? ""} border-solid`}
       style={{
         zIndex: props.zIndex,
-        borderColor: color
+        borderColor: color,
+        borderWidth: 2 * (1 / scale),
       }}
       bounds="parent"
+      scale={scale}
       position={{
         x: props.x,
         y: props.y,
@@ -69,9 +82,11 @@ const BoundingBox = (props: IBoundingBoxProps) => {
       onMouseDown={props.onMouseDown}
     >
       <mark
-        className={`absolute bottom-[-25px] right-[-2px] ${props.type === BoundingBoxType.falsePositive ? 'line-through' : ''} decoration-2`}
+        className={`absolute bottom-[-25px] right-[-2px] ${props.type === BoundingBoxType.falsePositive ? "line-through" : ""} decoration-2`}
         style={{
           backgroundColor: color,
+          transform: `scale(${(1 / scale).toString()})`,
+          transformOrigin: "top right",
         }}
       >
         {props.label}

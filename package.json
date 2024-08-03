@@ -49,6 +49,7 @@
   "dependencies": {
     "@headlessui/react": "^2.1.2",
     "react-rnd": "^10.4.11",
+    "react-zoom-pan-pinch": "^3.6.1",
     "ulid": "^2.3.0",
     "use-debounce": "^10.0.1"
   }

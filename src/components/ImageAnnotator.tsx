@@ -29,6 +29,8 @@ import { VerifyDialog } from "./VerifyDialog";
 import FormElement from "./FormElement";
 import { FormElementBox } from "./FormElementBox";
 import BoundingBox, { BoundingBoxType } from "./BoundingBox";
+import { Annotation } from "../types/Annotation";
+import { FalsePositive } from "../types/FalsePositive";
 
 interface EditorState {
   createMode: boolean;
@@ -50,26 +52,6 @@ interface EditorState {
   showDelete: boolean;
   showTutorial: boolean;
   showConfirmDeleteFalsePositive: boolean;
-}
-
-export interface Annotation {
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  label?: string;
-  difficult?: boolean;
-  suggestion?: boolean;
-}
-
-export interface FalsePositive {
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  label?: string;
 }
 
 interface IImageAnnotationProps {
