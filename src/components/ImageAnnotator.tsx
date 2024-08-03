@@ -9,14 +9,6 @@ import {
   Fragment,
 } from "react";
 
-// import {
-//   TransformWrapper,
-//   TransformComponent,
-//   KeepScale,
-//   useTransformEffect,
-//   useTransformContext,
-// } from "react-zoom-pan-pinch";
-
 import { Position, DraggableData } from "react-rnd";
 import { ulid } from "ulid";
 import { useDebouncedCallback } from "use-debounce";
@@ -123,8 +115,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const ref = useRef<HTMLImageElement>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
-
-  // const context = useTransformContext();
 
   const changeZoom = useCallback(
     (change: number) => {
