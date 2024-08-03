@@ -31,6 +31,7 @@ import { FormElementBox } from "./FormElementBox";
 import BoundingBox, { BoundingBoxType } from "./BoundingBox";
 import { Annotation } from "../types/Annotation";
 import { FalsePositive } from "../types/FalsePositive";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 interface EditorState {
   createMode: boolean;
@@ -696,85 +697,89 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           </div>
         </div>
         <div ref={editorRef} className="grid flex-auto place-content-center">
-          <div
-            className="grid place-content-center"
-            onMouseDown={onMouseDown}
-            onMouseUp={onMouseUp}
-            onMouseMove={onMouseMove}
-          >
-            <img
-              ref={ref}
-              className="col-start-1 row-start-1 h-full w-full"
-              alt="annotate"
-              src={props.imageUrl}
-              onLoad={onLoad}
-            />
-            {fpboxes.map((box) => (
-              <BoundingBox
-                type={BoundingBoxType.falsePositive}
-                label={box.label ?? ""}
-                key={box.id}
-                zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
-                x={box.x * state.width}
-                y={box.y * state.height}
-                w={box.w * state.width}
-                h={box.h * state.height}
-                selected={box.id === state.selectedBox}
-                onMouseDown={(e: { stopPropagation: () => void }) => {
-                  if (!state.createMode) {
-                    onClickBBox(box.id);
-                    e.stopPropagation();
-                  }
-                }}
-                onClickDelete={() => {
-                  setState({
-                    ...state,
-                    showConfirmDeleteFalsePositive: true,
-                  });
-                }}
-              />
-            ))}
-            {bboxes.map((box) => (
-              <BoundingBox
-                type={
-                  box.suggestion
-                    ? BoundingBoxType.suggestion
-                    : BoundingBoxType.truePositive
-                }
-                label={box.label ?? ""}
-                difficult={box.difficult}
-                key={box.id}
-                zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
-                x={box.x * state.width}
-                y={box.y * state.height}
-                w={box.w * state.width}
-                h={box.h * state.height}
-                selected={box.id === state.selectedBox}
-                onMouseDown={(e: { stopPropagation: () => void }) => {
-                  if (!state.createMode) {
-                    onClickBBox(box.id);
-                    e.stopPropagation();
-                  }
-                }}
-                onDragStop={(_e, d) => {
-                  onDragStop(d, box.id);
-                }}
-                onResizeStop={(_e, _d, r: HTMLElement, _delta, p) => {
-                  onResizeStop(r, p, box.id);
-                }}
-                onClickDelete={() => {
-                  deleteBox(box.id);
-                }}
-                onClickEdit={() => {
-                  setState({ ...state, showLabeler: true });
-                }}
-              />
-            ))}
-            <Crosshairs
-              className="col-start-1 row-start-1"
-              show={state.createMode && !state.drawingMode}
-            />
-          </div>
+          <TransformWrapper>
+            <TransformComponent>
+              <div
+                className="grid place-content-center"
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+                onMouseMove={onMouseMove}
+              >
+                <img
+                  ref={ref}
+                  className="col-start-1 row-start-1 h-full w-full"
+                  alt="annotate"
+                  src={props.imageUrl}
+                  onLoad={onLoad}
+                />
+                {fpboxes.map((box) => (
+                  <BoundingBox
+                    type={BoundingBoxType.falsePositive}
+                    label={box.label ?? ""}
+                    key={box.id}
+                    zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                    x={box.x * state.width}
+                    y={box.y * state.height}
+                    w={box.w * state.width}
+                    h={box.h * state.height}
+                    selected={box.id === state.selectedBox}
+                    onMouseDown={(e: { stopPropagation: () => void }) => {
+                      if (!state.createMode) {
+                        onClickBBox(box.id);
+                        e.stopPropagation();
+                      }
+                    }}
+                    onClickDelete={() => {
+                      setState({
+                        ...state,
+                        showConfirmDeleteFalsePositive: true,
+                      });
+                    }}
+                  />
+                ))}
+                {bboxes.map((box) => (
+                  <BoundingBox
+                    type={
+                      box.suggestion
+                        ? BoundingBoxType.suggestion
+                        : BoundingBoxType.truePositive
+                    }
+                    label={box.label ?? ""}
+                    difficult={box.difficult}
+                    key={box.id}
+                    zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                    x={box.x * state.width}
+                    y={box.y * state.height}
+                    w={box.w * state.width}
+                    h={box.h * state.height}
+                    selected={box.id === state.selectedBox}
+                    onMouseDown={(e: { stopPropagation: () => void }) => {
+                      if (!state.createMode) {
+                        onClickBBox(box.id);
+                        e.stopPropagation();
+                      }
+                    }}
+                    onDragStop={(_e, d) => {
+                      onDragStop(d, box.id);
+                    }}
+                    onResizeStop={(_e, _d, r: HTMLElement, _delta, p) => {
+                      onResizeStop(r, p, box.id);
+                    }}
+                    onClickDelete={() => {
+                      deleteBox(box.id);
+                    }}
+                    onClickEdit={() => {
+                      setState({ ...state, showLabeler: true });
+                    }}
+                  />
+                ))}
+                <Crosshairs
+                  className="col-start-1 row-start-1"
+                  show={state.createMode && !state.drawingMode}
+                />
+              </div>
+            </TransformComponent>
+          </TransformWrapper>
         </div>
       </div>
       <LabelDialog
