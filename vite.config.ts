@@ -33,5 +33,7 @@ export default defineConfig({
   //react() enables React support.
   //dts() generates TypeScript declaration files (*.d.ts)
   //during the build.
-  plugins: [react(), dts()],
+  plugins: [react(), dts({
+    exclude: ['**/*.stories.tsx']
+  })],
 });
