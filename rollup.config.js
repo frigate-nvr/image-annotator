@@ -37,5 +37,5 @@ export default {
         }),
         terser()
     ],
-    external: ['react', 'react-dom']  // Ensure these are not bundled
+    external: ['react', 'react-dom']
 };
