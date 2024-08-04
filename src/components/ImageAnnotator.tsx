@@ -580,198 +580,200 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <div
-        className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
-        onKeyDown={onKeyDown}
-        tabIndex={0}
-      >
-        <div className="flex flex-initial bg-slate-300 p-1">
-          <div className="flex-initial">
-            <button type="button" onClick={props.nextImage}>
-              <Button secondary sm>
-                Skip
-              </Button>
-            </button>
-          </div>
-          <div className="flex flex-auto justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                changeZoom(-0.1);
-              }}
-            >
-              <Button>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-                  />
-                </svg>
-              </Button>
-            </button>
-            <span className="mx-2 flex items-center">
-              {Math.round(state.zoom * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                changeZoom(0.1);
-              }}
-            >
-              <Button>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-                  />
-                </svg>
-              </Button>
-            </button>
-            <button type="button" onClick={clickCreate}>
-              <Button secondary sm>
-                Add (w)
-              </Button>
-            </button>
-          </div>
-          <div className="flex-initial">
-            <button
-              onClick={() => {
-                setState({ ...state, showVerify: true });
-              }}
-            >
-              <Button sm>Verify &amp; Save</Button>
-            </button>
-            <button
-              onClick={() => {
-                props.save(bboxes, fpboxes.length === 0, false);
-              }}
-            >
-              <Button green sm>
-                Save
-              </Button>
-            </button>
-            <button
-              onClick={() => {
-                setState({ ...state, showDelete: true });
-              }}
-            >
-              <Button red sm>
-                Exclude
-              </Button>
-            </button>
-            <button
-              onClick={() => {
-                setState({ ...state, showHelp: true });
-              }}
-            >
-              <Button sm secondary>
-                ?
-              </Button>
-            </button>
-          </div>
-        </div>
-        <div ref={editorRef} className="grid flex-auto place-content-center">
-          <TransformWrapper>
-            <TransformComponent>
-              <div
-                className="grid place-content-center"
-                onMouseDown={onMouseDown}
-                onMouseUp={onMouseUp}
-                onMouseMove={onMouseMove}
-              >
-                <img
-                  ref={ref}
-                  className="col-start-1 row-start-1 h-full w-full"
-                  alt="annotate"
-                  src={props.imageUrl}
-                  onLoad={onLoad}
-                />
-                {fpboxes.map((box) => (
-                  <BoundingBox
-                    type={BoundingBoxType.falsePositive}
-                    label={box.label ?? ""}
-                    key={box.id}
-                    zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
-                    x={box.x * state.width}
-                    y={box.y * state.height}
-                    w={box.w * state.width}
-                    h={box.h * state.height}
-                    selected={box.id === state.selectedBox}
-                    onMouseDown={(e: { stopPropagation: () => void }) => {
-                      if (!state.createMode) {
-                        onClickBBox(box.id);
-                        e.stopPropagation();
-                      }
-                    }}
-                    onClickDelete={() => {
-                      setState({
-                        ...state,
-                        showConfirmDeleteFalsePositive: true,
-                      });
-                    }}
-                  />
-                ))}
-                {bboxes.map((box) => (
-                  <BoundingBox
-                    type={
-                      box.suggestion
-                        ? BoundingBoxType.suggestion
-                        : BoundingBoxType.truePositive
-                    }
-                    label={box.label ?? ""}
-                    difficult={box.difficult}
-                    key={box.id}
-                    zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
-                    x={box.x * state.width}
-                    y={box.y * state.height}
-                    w={box.w * state.width}
-                    h={box.h * state.height}
-                    selected={box.id === state.selectedBox}
-                    onMouseDown={(e: { stopPropagation: () => void }) => {
-                      if (!state.createMode) {
-                        onClickBBox(box.id);
-                        e.stopPropagation();
-                      }
-                    }}
-                    onDragStop={(_e, d) => {
-                      onDragStop(d, box.id);
-                    }}
-                    onResizeStop={(_e, _d, r: HTMLElement, _delta, p) => {
-                      onResizeStop(r, p, box.id);
-                    }}
-                    onClickDelete={() => {
-                      deleteBox(box.id);
-                    }}
-                    onClickEdit={() => {
-                      setState({ ...state, showLabeler: true });
-                    }}
-                  />
-                ))}
-                <Crosshairs
-                  className="col-start-1 row-start-1"
-                  show={state.createMode && !state.drawingMode}
-                />
+      <TransformWrapper>
+        {({ zoomIn, zoomOut }) => (
+          <div
+            className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
+            onKeyDown={onKeyDown}
+            tabIndex={0}
+          >
+            <div className="flex flex-initial bg-slate-300 p-1">
+              <div className="flex-initial">
+                <button type="button" onClick={props.nextImage}>
+                  <Button secondary sm>
+                    Skip
+                  </Button>
+                </button>
               </div>
-            </TransformComponent>
-          </TransformWrapper>
-        </div>
-      </div>
+              <div className="flex flex-auto justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    zoomOut();
+                  }}
+                >
+                  <Button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
+                      />
+                    </svg>
+                  </Button>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    zoomIn();
+                  }}
+                >
+                  <Button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                      />
+                    </svg>
+                  </Button>
+                </button>
+                <button type="button" onClick={clickCreate}>
+                  <Button secondary sm>
+                    Add (w)
+                  </Button>
+                </button>
+              </div>
+              <div className="flex-initial">
+                <button
+                  onClick={() => {
+                    setState({ ...state, showVerify: true });
+                  }}
+                >
+                  <Button sm>Verify &amp; Save</Button>
+                </button>
+                <button
+                  onClick={() => {
+                    props.save(bboxes, fpboxes.length === 0, false);
+                  }}
+                >
+                  <Button green sm>
+                    Save
+                  </Button>
+                </button>
+                <button
+                  onClick={() => {
+                    setState({ ...state, showDelete: true });
+                  }}
+                >
+                  <Button red sm>
+                    Exclude
+                  </Button>
+                </button>
+                <button
+                  onClick={() => {
+                    setState({ ...state, showHelp: true });
+                  }}
+                >
+                  <Button sm secondary>
+                    ?
+                  </Button>
+                </button>
+              </div>
+            </div>
+            <div
+              ref={editorRef}
+              className="grid flex-auto place-content-center"
+            >
+              <TransformComponent>
+                <div
+                  className="grid place-content-center"
+                  onMouseDown={onMouseDown}
+                  onMouseUp={onMouseUp}
+                  onMouseMove={onMouseMove}
+                >
+                  <img
+                    ref={ref}
+                    className="col-start-1 row-start-1 h-full w-full"
+                    alt="annotate"
+                    src={props.imageUrl}
+                    onLoad={onLoad}
+                  />
+                  {fpboxes.map((box) => (
+                    <BoundingBox
+                      type={BoundingBoxType.falsePositive}
+                      label={box.label ?? ""}
+                      key={box.id}
+                      zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                      x={box.x * state.width}
+                      y={box.y * state.height}
+                      w={box.w * state.width}
+                      h={box.h * state.height}
+                      selected={box.id === state.selectedBox}
+                      onMouseDown={(e: { stopPropagation: () => void }) => {
+                        if (!state.createMode) {
+                          onClickBBox(box.id);
+                          e.stopPropagation();
+                        }
+                      }}
+                      onClickDelete={() => {
+                        setState({
+                          ...state,
+                          showConfirmDeleteFalsePositive: true,
+                        });
+                      }}
+                    />
+                  ))}
+                  {bboxes.map((box) => (
+                    <BoundingBox
+                      type={
+                        box.suggestion
+                          ? BoundingBoxType.suggestion
+                          : BoundingBoxType.truePositive
+                      }
+                      label={box.label ?? ""}
+                      difficult={box.difficult}
+                      key={box.id}
+                      zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
+                      x={box.x * state.width}
+                      y={box.y * state.height}
+                      w={box.w * state.width}
+                      h={box.h * state.height}
+                      selected={box.id === state.selectedBox}
+                      onMouseDown={(e: { stopPropagation: () => void }) => {
+                        if (!state.createMode) {
+                          onClickBBox(box.id);
+                          e.stopPropagation();
+                        }
+                      }}
+                      onDragStop={(_e, d) => {
+                        onDragStop(d, box.id);
+                      }}
+                      onResizeStop={(_e, _d, r: HTMLElement, _delta, p) => {
+                        onResizeStop(r, p, box.id);
+                      }}
+                      onClickDelete={() => {
+                        deleteBox(box.id);
+                      }}
+                      onClickEdit={() => {
+                        setState({ ...state, showLabeler: true });
+                      }}
+                    />
+                  ))}
+                  <Crosshairs
+                    className="col-start-1 row-start-1"
+                    show={state.createMode && !state.drawingMode}
+                  />
+                </div>
+              </TransformComponent>
+            </div>
+          </div>
+        )}
+      </TransformWrapper>
       <LabelDialog
         title="Annotate"
         show={state.showLabeler}
