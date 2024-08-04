@@ -2,5 +2,7 @@
     "extends": "@tsconfig/vite-react/tsconfig.json",
     "compilerOptions": {
       "allowImportingTsExtensions": false,
-    }
+      "typeRoots": ["./dist/index.d.ts", "node_modules/@types"]
+    },
+    "include": ["src", "./index.ts"],
 }
