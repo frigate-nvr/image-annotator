@@ -496,7 +496,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <TransformWrapper>
+      <TransformWrapper disabled={state.createMode || state.drawingMode}>
         {({ zoomIn, zoomOut }) => (
           <div
             className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
