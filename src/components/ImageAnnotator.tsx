@@ -1,8 +1,6 @@
 import {
   useState,
   useRef,
-  useCallback,
-  useEffect,
   MouseEventHandler,
   KeyboardEventHandler,
   ReactEventHandler,
@@ -53,7 +51,8 @@ interface IImageAnnotationProps {
     deleteFalsePositive: boolean,
     verified: boolean,
   ) => void;
-  excludeImage: () => void;
+  delete: () => void;
+  back: () => void;
   imageUrl: string;
   labels: string[];
   userAnnotationCount: number;
@@ -77,8 +76,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     { codes: ["Esc"], action: "Deselect/Cancel" },
     { codes: ["← ↑ → ↓"], action: "Move Box" },
     { codes: ["Shift", "← ↑ → ↓"], action: "Resize Box" },
-    { codes: ["-"], action: "Zoom Out" },
-    { codes: ["="], action: "Zoom In" },
     { codes: ["f"], action: "Toggle Unselected Boxes" },
     { codes: ["Spacebar"], action: "Verify and Save" },
   ];
@@ -145,7 +142,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const onMouseDown: MouseEventHandler<HTMLImageElement> = (e) => {
-    console.log("onMouseDown");
     if (state.createMode) {
       const x =
         (e.pageX - (ref.current?.getBoundingClientRect().left ?? 0)) /
@@ -423,12 +419,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     if (e.code === "Space") {
       props.save(bboxes, fpboxes.length === 0, true);
     }
-    if (e.code === "Minus") {
-      changeZoom(-0.1);
-    }
-    if (e.code === "Equal") {
-      changeZoom(0.1);
-    }
     if (e.code === "Slash" && e.shiftKey) {
       setState({ ...state, showHelp: true });
     }
@@ -515,9 +505,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           >
             <div className="flex flex-initial bg-slate-300 p-1">
               <div className="flex-initial">
-                <button type="button" onClick={props.nextImage}>
+                <button type="button" onClick={props.back}>
                   <Button secondary sm>
-                    Skip
+                    Back
                   </Button>
                 </button>
               </div>
@@ -597,7 +587,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                   }}
                 >
                   <Button red sm>
-                    Exclude
+                    Delete
                   </Button>
                 </button>
                 <button
@@ -796,7 +786,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         </ul>
       </VerifyDialog>
       <VerifyDialog
-        title="Are you sure you want to exclude this image?"
+        title="Are you sure you want to delete this image?"
         description=""
         handleCancel={() => {
           setState({ ...state, showDelete: false });
@@ -807,17 +797,17 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           <button
             type="button"
             onClick={() => {
-              props.excludeImage();
+              props.delete();
               setState({ ...state, showDelete: false });
             }}
           >
             <Button sm red>
-              Yes, exclude
+              Yes, permanently delete
             </Button>
           </button>
         }
       >
-        Image will be excluded from training
+        This cannot be undone.
       </VerifyDialog>
       <VerifyDialog
         title="Are you sure you want to delete this reported false positive?"
