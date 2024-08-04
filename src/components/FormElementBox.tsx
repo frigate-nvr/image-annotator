@@ -3,12 +3,12 @@ import { ReactNode } from "react";
 
 import classNames from "classnames";
 
-type IFormElementBoxProps = {
+interface IFormElementBoxProps {
   htmlFor?: string;
   text: string;
   children: ReactNode;
   colSpanSize?: string;
-};
+}
 
 /**
  * @component
