@@ -32,10 +32,10 @@ const meta: Meta<typeof BoundingBox> = {
     args.w = state.w;
     args.h = state.h;
 
-    args.onDragStop = (e, d) => {
+    args.onDragStop = (_e, d) => {
       setState({ ...state, x: d.x, y: d.y });
     };
-    args.onResizeStop = (e, direction, ref, delta, position) => {
+    args.onResizeStop = (_e, _direction, ref, _delta, position) => {
       setState({
         ...state,
         x: position.x,
