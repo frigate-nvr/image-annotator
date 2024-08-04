@@ -11,7 +11,6 @@ import {
 
 import { Position, DraggableData } from "react-rnd";
 import { ulid } from "ulid";
-import { useDebouncedCallback } from "use-debounce";
 
 import Button from "./Button";
 import Crosshairs from "./Crosshairs";
@@ -35,11 +34,8 @@ interface EditorState {
   showLabeler: boolean;
   selectedLabel: string;
   difficult: boolean;
-  imgWidth: number;
-  imgHeight: number;
   height: number;
   width: number;
-  zoom: number;
   showHelp: boolean;
   showVerify: boolean;
   showDelete: boolean;
@@ -107,64 +103,11 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     difficult: false,
     width: 1,
     height: 1,
-    imgHeight: 1,
-    imgWidth: 1,
-    zoom: 2,
   });
 
   const ref = useRef<HTMLImageElement>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
-
-  const changeZoom = useCallback(
-    (change: number) => {
-      let adjustedZoom = state.zoom + change;
-      const { imgHeight, imgWidth } = state;
-      const desiredHeight = Math.round(imgHeight * adjustedZoom);
-      const editorHeight =
-        window.innerHeight -
-        (editorRef.current?.getBoundingClientRect().top ?? 0);
-
-      if (desiredHeight > editorHeight - 50) {
-        adjustedZoom = (editorHeight - 50) / imgHeight;
-      }
-
-      const desiredWidth = Math.round(imgWidth * adjustedZoom);
-      const editorWidth = editorRef.current?.getBoundingClientRect().width ?? 0;
-
-      if (desiredWidth > editorWidth - 50) {
-        adjustedZoom = (editorWidth - 50) / imgWidth;
-      }
-
-      setState({
-        ...state,
-        zoom: adjustedZoom,
-        width: imgWidth * adjustedZoom,
-        height: imgHeight * adjustedZoom,
-      });
-      setBBoxes((prev) => prev.map((a) => ({ ...a })));
-    },
-    [state],
-  );
-
-  const handleResize: (this: Window, ev: UIEvent) => void =
-    useDebouncedCallback(() => {
-      if (
-        state.height > window.innerHeight ||
-        state.width > window.innerWidth
-      ) {
-        changeZoom(0.0);
-      }
-    }, 200);
-
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    editorRef.current?.parentElement?.focus();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [handleResize]);
 
   const onResizeStop = (
     elem: HTMLElement,
@@ -522,29 +465,12 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const onLoad: ReactEventHandler<HTMLImageElement> = (e) => {
-    let adjustedZoom = state.zoom;
     const { naturalHeight, naturalWidth } = e.currentTarget;
-    const desiredHeight = Math.round(naturalHeight * adjustedZoom);
-    const editorHeight = editorRef.current?.getBoundingClientRect().height ?? 0;
-
-    if (desiredHeight > editorHeight - 50) {
-      adjustedZoom = (editorHeight - 50) / naturalHeight;
-    }
-
-    const desiredWidth = Math.round(naturalWidth * adjustedZoom);
-    const editorWidth = editorRef.current?.getBoundingClientRect().width ?? 0;
-
-    if (desiredWidth > editorWidth - 50) {
-      adjustedZoom = (editorWidth - 50) / naturalWidth;
-    }
 
     setState({
       ...state,
-      imgWidth: naturalWidth,
-      imgHeight: naturalHeight,
-      width: Math.round(naturalWidth * adjustedZoom),
-      height: Math.round(naturalHeight * adjustedZoom),
-      zoom: adjustedZoom,
+      width: Math.round(naturalWidth),
+      height: Math.round(naturalHeight),
     });
 
     setBBoxes(
