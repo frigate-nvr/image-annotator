@@ -5,9 +5,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 import tailwindcss from "tailwindcss";
+import { libInjectCss } from 'vite-plugin-lib-inject-css'
 
 export default defineConfig({
-  plugins: [react(), dts({
+  plugins: [react(), libInjectCss(), dts({
     rollupTypes: true,
     exclude: ['**/*.stories.tsx']
   })],
@@ -19,7 +20,7 @@ export default defineConfig({
     rollupOptions: {
       external: ["react", "react-dom", 'react/jsx-runtime', "tailwindcss"],
       input: Object.fromEntries(
-        globSync(['src/components/**/index.tsx', 'src/index.ts']).map((file) => {
+        globSync(['src/components/**/*.tsx', 'src/index.ts']).map((file) => {
           // This remove `src/` as well as the file extension from each
           // file, so e.g. src/nested/foo.js becomes nested/foo
           const entryName = path.relative(
