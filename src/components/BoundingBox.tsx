@@ -145,4 +145,4 @@ const BoundingBox = (props: IBoundingBoxProps) => {
   );
 };
 
-export default BoundingBox;
+export { BoundingBox };

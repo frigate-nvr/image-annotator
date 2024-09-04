@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import ImageAnnotator from "../components/ImageAnnotator";
+import { ImageAnnotator } from "../components/ImageAnnotator";
 
 const meta: Meta<typeof ImageAnnotator> = {
   title: "ImageAnnotator",

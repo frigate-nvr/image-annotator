@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 import { Dialog, DialogTitle } from "@headlessui/react";
 
-import Button from "./Button";
+import { Button } from "./Button";
 
 interface ILabelDialogProps {
   title: string;

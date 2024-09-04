@@ -10,14 +10,14 @@ import {
 import { Position, DraggableData } from "react-rnd";
 import { ulid } from "ulid";
 
-import Button from "./Button";
-import Crosshairs from "./Crosshairs";
+import { Button } from "./Button";
+import { Crosshairs } from "./Crosshairs";
 import { InfoDialog } from "./InfoDialog";
 import { LabelDialog } from "./LabelDialog";
 import { VerifyDialog } from "./VerifyDialog";
-import FormElement from "./FormElement";
+import { FormElement } from "./FormElement";
 import { FormElementBox } from "./FormElementBox";
-import BoundingBox, { BoundingBoxType } from "./BoundingBox";
+import { BoundingBox, BoundingBoxType } from "./BoundingBox";
 import { Annotation } from "../types/Annotation";
 import { FalsePositive } from "../types/FalsePositive";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
@@ -848,4 +848,4 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   );
 };
 
-export default ImageAnnotator;
+export { ImageAnnotator };

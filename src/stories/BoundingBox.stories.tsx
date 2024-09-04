@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import BoundingBox, { BoundingBoxType } from "../components/BoundingBox";
+import { BoundingBox, BoundingBoxType } from "../components/BoundingBox";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { useState } from "react";
 

@@ -53,4 +53,4 @@ const Crosshairs = (props: ICrosshairsProps) => {
   );
 };
 
-export default Crosshairs;
+export { Crosshairs };

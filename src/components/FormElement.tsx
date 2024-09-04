@@ -30,4 +30,4 @@ const FormElement = (props: IFormElementProps) => {
   );
 };
 
-export default FormElement;
+export { FormElement };

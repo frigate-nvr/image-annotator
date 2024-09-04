@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import Crosshairs from "../components/Crosshairs";
+import { Crosshairs } from "../components/Crosshairs";
 
 const meta: Meta<typeof Crosshairs> = {
   title: "Crosshairs",
