@@ -1,7 +1,18 @@
+# Frigate+ Image Annotator
+
+This is an opinionated image annotation component designed for Frigate+.
+
+## Dependencies
+
+This library depends on tailwind libraries for styling.
 
 ```
 npm install -D tailwindcss @tailwindcss/forms
 ```
+
+## Configuration
+
+You need to include the library in your `tailwind.config.js` file.
 
 ```
 /** @type {import('tailwindcss').Config} */
