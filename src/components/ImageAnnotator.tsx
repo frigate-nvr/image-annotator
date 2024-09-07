@@ -98,7 +98,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     showTutorial: props.userAnnotationCount === 0,
     drawStartX: 0,
     drawStartY: 0,
-    selectedLabel: "person",
+    selectedLabel: props.labels[0],
     difficult: false,
     width: 1,
     height: 1,
