@@ -5,6 +5,7 @@ import {
   KeyboardEventHandler,
   ReactEventHandler,
   Fragment,
+  useEffect,
 } from "react";
 
 import { Position, DraggableData } from "react-rnd";
@@ -20,7 +21,8 @@ import { FormElementBox } from "./FormElementBox";
 import { BoundingBox, BoundingBoxType } from "./BoundingBox";
 import { Annotation } from "../types/Annotation";
 import { FalsePositive } from "../types/FalsePositive";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { useDebouncedCallback } from "use-debounce";
 
 interface EditorState {
   createMode: boolean;
@@ -106,6 +108,27 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   const editorRef = useRef<HTMLDivElement>(null);
 
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+
+  const handleResize = useDebouncedCallback(() => {
+    const bounds = ref.current?.getBoundingClientRect();
+
+    setState({
+      ...state,
+      width: Math.round(bounds?.width ?? 0),
+      height: Math.round(bounds?.height ?? 0),
+    });
+  }, 200);
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    editorRef.current?.parentElement?.focus();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [handleResize]);
+  
   const onResizeStop = (
     elem: HTMLElement,
     position: Position,
@@ -143,12 +166,15 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   const onMouseDown: MouseEventHandler<HTMLImageElement> = (e) => {
     if (state.createMode) {
+      const scale = transformRef.current?.instance.transformState.scale ?? 1;
+      const bounds = ref.current?.getBoundingClientRect();
       const x =
-        (e.pageX - (ref.current?.getBoundingClientRect().left ?? 0)) /
+        (e.clientX - (bounds?.left ?? 0)) / scale /
         state.width;
       const y =
-        (e.pageY - (ref.current?.getBoundingClientRect().top ?? 0)) /
+        (e.clientY - (bounds?.top ?? 0)) / scale /
         state.height;
+
       setState({
         ...state,
         drawingMode: true,
@@ -183,11 +209,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       setBBoxes((prev) =>
         prev.reduce<Annotation[]>((out, a) => {
           if (a.id === "draft") {
+            const scale = transformRef.current?.instance.transformState.scale ?? 1;
+            const bounds = ref.current?.getBoundingClientRect();
             const x =
-              (e.pageX - (ref.current?.getBoundingClientRect().left ?? 0)) /
+              (e.clientX - (bounds?.left ?? 0)) / scale /
               state.width;
             const y =
-              (e.pageY - (ref.current?.getBoundingClientRect().top ?? 0)) /
+              (e.clientY - (bounds?.top ?? 0)) / scale /
               state.height;
 
             if (
@@ -233,11 +261,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       setBBoxes((prev) =>
         prev.map((a) => {
           if (a.id === "draft") {
+            const scale = transformRef.current?.instance.transformState.scale ?? 1;
+            const bounds = ref.current?.getBoundingClientRect();
             const x =
-              (e.pageX - (ref.current?.getBoundingClientRect().left ?? 0)) /
+              (e.pageX - (bounds?.left ?? 0)) / scale /
               state.width;
             const y =
-              (e.pageY - (ref.current?.getBoundingClientRect().top ?? 0)) /
+              (e.pageY - (bounds?.top ?? 0)) / scale /
               state.height;
 
             return {
@@ -496,7 +526,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <TransformWrapper disabled={state.createMode || state.drawingMode}>
+      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode}>
         {({ zoomIn, zoomOut }) => (
           <div
             className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
@@ -629,6 +659,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                       y={box.y * state.height}
                       w={box.w * state.width}
                       h={box.h * state.height}
+                      initialScale={transformRef.current?.instance.transformState.scale}
                       selected={box.id === state.selectedBox}
                       onMouseDown={(e: { stopPropagation: () => void }) => {
                         if (!state.createMode) {
@@ -659,6 +690,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                       y={box.y * state.height}
                       w={box.w * state.width}
                       h={box.h * state.height}
+                      initialScale={transformRef.current?.instance.transformState.scale}
                       selected={box.id === state.selectedBox}
                       onMouseDown={(e: { stopPropagation: () => void }) => {
                         if (!state.createMode) {

@@ -19,6 +19,7 @@ interface IBoundingBoxProps {
   y: number;
   w: number;
   h: number;
+  initialScale?: number;
   onDragStop?: DraggableEventHandler;
   onResizeStop?: RndResizeCallback;
   onMouseDown?: (e: MouseEvent) => void;
@@ -40,7 +41,7 @@ const unselectedColors = {
 };
 
 const BoundingBox = (props: IBoundingBoxProps) => {
-  const [scale, setScale] = useState<number>(1);
+  const [scale, setScale] = useState<number>(props.initialScale ?? 1);
 
   useTransformEffect(({ state }) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
