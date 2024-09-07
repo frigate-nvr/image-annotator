@@ -53,7 +53,7 @@ const meta: Meta<typeof BoundingBox> = {
               <img
                 className="col-start-1 row-start-1 h-full w-full"
                 alt="annotate"
-                src="/src/stories/assets/back.jpg"
+                src="https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back.jpg?raw=true"
               />
               <BoundingBox {...args} />
             </div>
