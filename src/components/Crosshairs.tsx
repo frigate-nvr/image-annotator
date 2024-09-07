@@ -1,4 +1,5 @@
 import { MouseEventHandler, useRef, useState } from "react";
+import { useTransformEffect } from "react-zoom-pan-pinch";
 
 interface CrosshairsState {
   top: number;
@@ -11,6 +12,13 @@ interface ICrosshairsProps {
 }
 
 const Crosshairs = (props: ICrosshairsProps) => {
+  const [scale, setScale] = useState<number>(1);
+
+  useTransformEffect(({ state }) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    setScale(state.scale);
+  });
+  
   const ref = useRef<HTMLDivElement>(null);
 
   const [crosshairs, setCrosshairs] = useState<CrosshairsState>({
@@ -20,8 +28,11 @@ const Crosshairs = (props: ICrosshairsProps) => {
 
   const onMouseMove: MouseEventHandler<HTMLImageElement> = (e) => {
     if (props.show) {
-      const x = e.clientX - (ref.current?.getBoundingClientRect().left ?? 0) - 3;
-      const y = e.clientY - (ref.current?.getBoundingClientRect().top ?? 0) - 3;
+      const bounds = ref.current?.getBoundingClientRect();
+      const width = bounds?.width ?? 0;
+      const height = bounds?.height ?? 0;
+      const x = Math.min(width-3, e.clientX - (bounds?.left ?? 0))/scale;
+      const y = Math.min(height-3, e.clientY - (bounds?.top ?? 0))/scale;
       setCrosshairs({
         left: x,
         top: y,
@@ -36,17 +47,19 @@ const Crosshairs = (props: ICrosshairsProps) => {
       onMouseMove={onMouseMove}
     >
       <div
-        className="col-start-1 row-start-1 top-0 border-l-2 border-dashed border-black"
+        className="col-start-1 row-start-1 top-0 border-dashed border-black"
         style={{
           marginLeft: crosshairs.left,
           visibility: props.show ? "visible" : "hidden",
+          borderLeftWidth: 2 * (1 / scale),
         }}
       ></div>
       <div
-        className="col-start-1 row-start-1 left-0 border-t-2 border-dashed border-black"
+        className="col-start-1 row-start-1 left-0 border-dashed border-black"
         style={{
           marginTop: crosshairs.top,
           visibility: props.show ? "visible" : "hidden",
+          borderTopWidth: 2 * (1 / scale),
         }}
       ></div>
     </div>

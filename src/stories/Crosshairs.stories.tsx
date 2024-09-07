@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Crosshairs } from "../components/Crosshairs";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 
 const meta: Meta<typeof Crosshairs> = {
   title: "Crosshairs",
@@ -16,4 +17,13 @@ export const Default: Story = {
     show: true,
     className: "h-96 w-96 border-solid border-2"
   },
+  render: function Render(args) {
+    return (
+        <TransformWrapper>
+          <TransformComponent>
+            <Crosshairs {...args} />
+          </TransformComponent>
+        </TransformWrapper>
+    );
+  }
 };
