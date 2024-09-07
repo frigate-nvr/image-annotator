@@ -2,6 +2,8 @@
 
 This is an opinionated image annotation component designed for Frigate+.
 
+[Storybook Demo](https://frigate-nvr.github.io/image-annotator/)
+
 ## Dependencies
 
 This library depends on tailwind libraries for styling.
