@@ -19,7 +19,7 @@ export const Default: Story = {
   },
   render: function Render(args) {
     return (
-        <TransformWrapper>
+        <TransformWrapper disabled={true}>
           <TransformComponent>
             <Crosshairs {...args} />
           </TransformComponent>
