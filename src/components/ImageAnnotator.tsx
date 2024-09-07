@@ -403,7 +403,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
   };
 
-  const stepSize = 5;
+  const stepSize = 5 / (transformRef.current?.instance.transformState.scale ?? 1);
   const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (e.code === "Escape") {
       if (state.createMode) {
