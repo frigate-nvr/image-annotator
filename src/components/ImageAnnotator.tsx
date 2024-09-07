@@ -51,7 +51,7 @@ interface IImageAnnotationProps {
   save: (
     annotations: Annotation[],
     deleteFalsePositive: boolean,
-    verified: boolean,
+    verified: string[],
   ) => void;
   delete: () => void;
   back: () => void;
@@ -447,7 +447,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       e.preventDefault();
     }
     if (e.code === "Space") {
-      props.save(bboxes, fpboxes.length === 0, true);
+      props.save(bboxes, fpboxes.length === 0, props.labels);
     }
     if (e.code === "Slash" && e.shiftKey) {
       setState({ ...state, showHelp: true });
@@ -604,7 +604,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                 </button>
                 <button
                   onClick={() => {
-                    props.save(bboxes, fpboxes.length === 0, false);
+                    props.save(bboxes, fpboxes.length === 0, []);
                   }}
                 >
                   <Button green sm>
@@ -801,7 +801,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           <button
             type="button"
             onClick={() => {
-              props.save(bboxes, fpboxes.length === 0, true);
+              props.save(bboxes, fpboxes.length === 0, props.labels);
               setState({ ...state, showVerify: false });
             }}
           >
