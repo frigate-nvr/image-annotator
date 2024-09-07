@@ -6,7 +6,7 @@ This is an opinionated image annotation component designed for Frigate+.
 
 This library depends on tailwind libraries for styling.
 
-```
+```shell
 npm install -D tailwindcss @tailwindcss/forms
 ```
 
@@ -14,7 +14,7 @@ npm install -D tailwindcss @tailwindcss/forms
 
 You need to include the library in your `tailwind.config.js` file.
 
-```
+```typescript
 /** @type {import('tailwindcss').Config} */
 
 import tailwindForms from "@tailwindcss/forms";
