@@ -22,3 +22,15 @@ export const Loading: Story = {
     loading: true
   },
 };
+export const Red: Story = {
+  args: {
+    children: "Button",
+    red: true
+  },
+};
+export const Green: Story = {
+  args: {
+    children: "Button",
+    green: true
+  },
+};
