@@ -110,14 +110,33 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
-  const handleResize = useDebouncedCallback(() => {
-    const bounds = ref.current?.getBoundingClientRect();
+  const resize = () => {
+    let adjustedZoom = 4;
+    const naturalHeight = ref.current?.naturalHeight ?? 0;
+    const naturalWidth = ref.current?.naturalWidth ?? 0;
+    const desiredHeight = Math.round(naturalHeight * adjustedZoom);
+    const editorHeight = editorRef.current?.getBoundingClientRect().height ?? 0;
+
+    if (desiredHeight > editorHeight - 10) {
+      adjustedZoom = (editorHeight - 10) / naturalHeight;
+    }
+
+    const desiredWidth = Math.round(naturalWidth * adjustedZoom);
+    const editorWidth = editorRef.current?.getBoundingClientRect().width ?? 0;
+
+    if (desiredWidth > editorWidth - 10) {
+      adjustedZoom = (editorWidth - 10) / naturalWidth;
+    }
 
     setState({
       ...state,
-      width: Math.round(bounds?.width ?? 0),
-      height: Math.round(bounds?.height ?? 0),
+      width: Math.round(naturalWidth * adjustedZoom),
+      height: Math.round(naturalHeight * adjustedZoom),
     });
+  }
+
+  const handleResize = useDebouncedCallback(() => {
+    resize()
   }, 200);
 
   useEffect(() => {
@@ -485,13 +504,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const onLoad: ReactEventHandler<HTMLImageElement> = (e) => {
-    const { naturalHeight, naturalWidth } = e.currentTarget;
-
-    setState({
-      ...state,
-      width: Math.round(naturalWidth),
-      height: Math.round(naturalHeight),
-    });
+    resize();
 
     setBBoxes(
       props.annotations
@@ -641,6 +654,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                   onMouseDown={onMouseDown}
                   onMouseUp={onMouseUp}
                   onMouseMove={onMouseMove}
+                  
                 >
                   <img
                     ref={ref}
@@ -648,6 +662,10 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     alt="annotate"
                     src={props.imageUrl}
                     onLoad={onLoad}
+                    style={{
+                      width: state.width,
+                      height: state.height,
+                    }}
                   />
                   {fpboxes.map((box) => (
                     <BoundingBox

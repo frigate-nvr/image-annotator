@@ -59,3 +59,13 @@ export const Suggestions: Story = {
     labels: ['person', 'car', 'dog']
   },
 };
+
+export const SmallImage: Story = {
+  args: {
+    imageUrl: 'https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back_small.jpg?raw=true',
+    annotations: [],
+    suggestions: [],
+    falsePositives: [],
+    labels: ['person', 'car', 'dog']
+  },
+};
