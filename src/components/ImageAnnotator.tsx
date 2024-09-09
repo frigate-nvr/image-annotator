@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import { Position, DraggableData } from "react-rnd";
-import { ulid } from "ulid";
 
 import { Button } from "./Button";
 import { Crosshairs } from "./Crosshairs";
@@ -218,7 +217,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   const onMouseUp: MouseEventHandler<HTMLImageElement> = (e) => {
     if (state.drawingMode) {
-      const newId = ulid();
+      const newId = Date.now().toString();
       setState({
         ...state,
         drawingMode: false,
