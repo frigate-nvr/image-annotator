@@ -503,7 +503,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
   };
 
-  const onLoad: ReactEventHandler<HTMLImageElement> = (e) => {
+  const onLoad: ReactEventHandler<HTMLImageElement> = (_e) => {
     resize();
 
     setBBoxes(
