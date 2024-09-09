@@ -1,4 +1,4 @@
-import "./FormElementBox.module.css";
+import "./FormElementBox.css";
 import { ReactNode } from "react";
 
 import classNames from "classnames";
