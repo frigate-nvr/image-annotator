@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import "./FormElement.css";
+import "./FormElement.module.css";
 import classNames from "classnames";
 
 interface IFormElementProps {
