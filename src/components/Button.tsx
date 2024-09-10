@@ -1,4 +1,3 @@
-import "./Button.css";
 import { ReactNode } from "react";
 
 import classNames from "classnames";
@@ -31,21 +30,20 @@ interface IButtonProps {
 const Button = (props: IButtonProps) => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const btnClass = classNames({
-    btn: true,
-    "btn-xs": props.xs,
-    "btn-sm": props.sm,
-    "btn-xl": props.xl,
-    "btn-base": !props.xl,
-    "btn-secondary": props.secondary,
-    "btn-primary": !props.secondary,
-    "btn-red": props.red,
-    "btn-green": props.green,
+    "text-sm py-2 px-2": props.xs,
+    "text-base font-medium py-2 px-3": props.sm,
+    "font-extrabold text-xl py-4 px-6": props.xl,
+    "text-lg font-semibold py-2 px-4": !props.xl,
+    "bg-white text-gray-700 border-gray-400 hover:bg-gray-100 active:bg-white": props.secondary,
+    "text-white bg-primary-700 border-gray-100 hover:bg-primary-900 active:bg-primary-800": !props.secondary && !props.red && !props.green,
+    "text-white bg-red-500 border-gray-100 hover:bg-red-600 active:bg-red-500": props.red,
+    "text-white bg-green-600 border-gray-100 hover:bg-green-700 active:bg-green-600": props.green,
     "w-full": props.full,
   });
 
   return (
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    <div className={btnClass}>
+    <div className={`inline-flex rounded-md border items-center justify-center ${btnClass}`}>
       {props.loading && (
         <svg
           xmlns="http://www.w3.org/2000/svg"

@@ -15,8 +15,6 @@ import { Crosshairs } from "./Crosshairs";
 import { InfoDialog } from "./InfoDialog";
 import { LabelDialog } from "./LabelDialog";
 import { VerifyDialog } from "./VerifyDialog";
-import { FormElement } from "./FormElement";
-import { FormElementBox } from "./FormElementBox";
 import { BoundingBox, BoundingBoxType } from "./BoundingBox";
 import { Annotation } from "../types/Annotation";
 import { FalsePositive } from "../types/FalsePositive";
@@ -753,8 +751,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         handleCancel={onCancelLabel}
       >
         <div className="my-2 grid grid-cols-1 gap-y-2">
-          <FormElement>
+          <div>
             <select
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
               value={state.selectedLabel}
               onChange={(e) => {
                 setState({ ...state, selectedLabel: e.target.value });
@@ -766,17 +765,21 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                 </option>
               ))}
             </select>
-          </FormElement>
-          <FormElementBox htmlFor="difficult" text="Difficult?">
+          </div>
+          <div className="flex items-center">
             <input
               id="difficult"
+              className="border-gray-300 text-primary-600 shadow-sm hover:border-gray-300 focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50 focus:ring-offset-0 rounded"
               type="checkbox"
               checked={state.difficult}
               onChange={(e) => {
                 setState({ ...state, difficult: e.target.checked });
               }}
             />
-          </FormElementBox>
+            <label htmlFor="difficult" className="ml-2">
+              Difficult?
+            </label>
+          </div>
         </div>
       </LabelDialog>
       <InfoDialog
