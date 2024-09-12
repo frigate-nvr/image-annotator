@@ -728,7 +728,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     />
                   ))}
                   <Crosshairs
-                    className="col-start-1 row-start-1"
+                    className="col-start-1 row-start-1 z-10"
                     show={state.createMode && !state.drawingMode}
                   />
                 </div>
