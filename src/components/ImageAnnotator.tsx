@@ -108,28 +108,31 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   const resize = () => {
-    let adjustedZoom = 4;
-    const naturalHeight = ref.current?.naturalHeight ?? 0;
-    const naturalWidth = ref.current?.naturalWidth ?? 0;
-    const desiredHeight = Math.round(naturalHeight * adjustedZoom);
-    const editorHeight = editorRef.current?.getBoundingClientRect().height ?? 0;
+    const naturalHeight = ref.current?.naturalHeight ?? 1;
+    const naturalWidth = ref.current?.naturalWidth ?? 1;
+    const aspectRatio = naturalWidth/naturalHeight;
 
-    if (desiredHeight > editorHeight - 10) {
-      adjustedZoom = (editorHeight - 10) / naturalHeight;
+    const editorHeight = editorRef.current?.clientHeight ?? 0;
+    const editorWidth = editorRef.current?.clientWidth ?? 0;
+
+    const maxHeight = editorHeight - 5;
+    const maxWidth = editorWidth - 5;
+    const desiredWidth = maxHeight * aspectRatio;
+    
+    // if too wide when max height, then use maxWidth
+    if (desiredWidth > maxWidth) {
+      setState({
+        ...state,
+        width: maxWidth,
+        height: Math.round(maxWidth/aspectRatio),
+      });
+    } else {
+      setState({
+        ...state,
+        width: desiredWidth,
+        height: Math.round(desiredWidth/aspectRatio),
+      })
     }
-
-    const desiredWidth = Math.round(naturalWidth * adjustedZoom);
-    const editorWidth = editorRef.current?.getBoundingClientRect().width ?? 0;
-
-    if (desiredWidth > editorWidth - 10) {
-      adjustedZoom = (editorWidth - 10) / naturalWidth;
-    }
-
-    setState({
-      ...state,
-      width: Math.round(naturalWidth * adjustedZoom),
-      height: Math.round(naturalHeight * adjustedZoom),
-    });
   }
 
   const handleResize = useDebouncedCallback(() => {
@@ -536,10 +539,10 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode}>
+      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode} minScale={0.9}>
         {({ zoomIn, zoomOut }) => (
           <div
-            className="flex h-screen min-w-[600px] flex-col overflow-hidden bg-slate-900"
+            className="flex h-screen min-w-[600px] flex-col bg-slate-900"
             onKeyDown={onKeyDown}
             tabIndex={0}
           >
