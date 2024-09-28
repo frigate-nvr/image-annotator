@@ -1,4 +1,4 @@
-import { MouseEventHandler, useState } from "react";
+import React, { MouseEventHandler, useState } from "react";
 import { DraggableEventHandler } from "react-draggable";
 import { Rnd, RndResizeCallback } from "react-rnd";
 import { useTransformEffect } from "react-zoom-pan-pinch";
@@ -58,6 +58,21 @@ const BoundingBox = (props: IBoundingBoxProps) => {
     color = props.selected ? "#fae352" : "#ad9e3d";
   }
 
+  const edgeHandleSize = Math.ceil(10 / scale);
+  const cornerHandleSize = edgeHandleSize * 2;
+  const edgeHandleOffset = Math.ceil(edgeHandleSize / 2);
+  const cornerHandleOffset = edgeHandleOffset * 2;
+
+  const handleCommonStyles : React.CSSProperties = {
+    position: "absolute",
+    userSelect: "none",
+  }
+  const cornerCommonStyles : React.CSSProperties = {
+    ...handleCommonStyles,
+    width: `${cornerHandleSize.toString()}px`,
+    height: `${cornerHandleSize.toString()}px`,
+  }
+
   return (
     <Rnd
       className={`${props.className ?? ""} border-solid`}
@@ -81,6 +96,64 @@ const BoundingBox = (props: IBoundingBoxProps) => {
       disableDragging={!editable}
       enableResizing={editable}
       onMouseDown={props.onMouseDown}
+      resizeHandleStyles={{
+        right: {
+          ...handleCommonStyles,
+          width: `${edgeHandleSize.toString()}px`,
+          height: "100%",
+          top: "0px",
+          cursor: "col-resize",
+          right: `-${edgeHandleOffset.toString()}px`,
+        },
+        bottom: {
+          ...handleCommonStyles,
+          width: "100%",
+          height: `${edgeHandleSize.toString()}px`,
+          left: "0px",
+          cursor: "row-resize",
+          bottom: `-${edgeHandleOffset.toString()}px`,
+        },
+        left: {
+          ...handleCommonStyles,
+          width: `${edgeHandleSize.toString()}px`,
+          height: "100%",
+          top: "0px",
+          left: `-${edgeHandleOffset.toString()}px`,
+          cursor: "col-resize",
+        },
+        top: {
+          ...handleCommonStyles,
+          width: "100%",
+          height: `${edgeHandleSize.toString()}px`,
+          left: "0px",
+          cursor: "row-resize",
+          top: `-${edgeHandleOffset.toString()}px`,
+        },
+        bottomRight: {
+          ...cornerCommonStyles,
+          right: `-${cornerHandleOffset}px`,
+          bottom: `-${cornerHandleOffset}px`,
+          cursor: "se-resize",
+        },
+        bottomLeft: {
+          ...cornerCommonStyles,
+          left: `-${cornerHandleOffset}px`,
+          bottom: `-${cornerHandleOffset}px`,
+          cursor: "sw-resize",
+        },
+        topLeft: {
+          ...cornerCommonStyles,
+          left: `-${cornerHandleOffset}px`,
+          top: `-${cornerHandleOffset}px`,
+          cursor: "nw-resize",
+        },
+        topRight: {
+          ...cornerCommonStyles,
+          right: `-${cornerHandleOffset}px`,
+          top: `-${cornerHandleOffset}px`,
+          cursor: "ne-resize",
+        },
+      }}
     >
       <mark
         className={`absolute bottom-[-25px] right-[-2px] ${props.type === BoundingBoxType.falsePositive ? "line-through" : ""} decoration-2`}
