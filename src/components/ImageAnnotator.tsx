@@ -813,8 +813,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         </div>
       </InfoDialog>
       <VerifyDialog
-        title="Are all objects in this image labeled?"
+        title="Are all of the objects in this image labeled?"
         description=" "
+        maxWidthClass="max-w-lg"
         handleCancel={() => {
           setState({ ...state, showVerify: false });
         }}
@@ -834,11 +835,11 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           </button>
         }
       >
-        <ul className="list-inside list-disc">
+        <div className="flex flex-wrap">
           {props.labels.map((o) => (
-            <li key={o}>{o}</li>
+            <div className="font-mono m-1 bg-slate-200 p-1 rounded-md" key={o}>{o}</div>
           ))}
-        </ul>
+        </div>
       </VerifyDialog>
       <VerifyDialog
         title="Are you sure you want to delete this image?"
