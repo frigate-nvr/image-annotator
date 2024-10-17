@@ -47,6 +47,7 @@ interface IImageAnnotationProps {
   nextImage: () => void;
   save: (
     annotations: Annotation[],
+    reviewedSuggestions: string[],
     deleteFalsePositive: boolean,
     verified: string[],
   ) => void;
@@ -466,7 +467,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       e.preventDefault();
     }
     if (e.code === "Space") {
-      props.save(bboxes, fpboxes.length === 0, props.labels);
+      save(true);
     }
     if (e.code === "Slash" && e.shiftKey) {
       setState({ ...state, showHelp: true });
@@ -534,6 +535,10 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     setState({ ...state, showLabeler: false });
     setBBoxes((prev) => prev.filter((a) => a.label));
   };
+  
+  const save = (verified: boolean) => {
+    props.save(bboxes, props.suggestions.map((s) => s.id), fpboxes.length === 0, verified ? props.labels : []);
+  }
 
   const defaultZIndex = state.showBoxes ? 0 : -1;
 
@@ -617,7 +622,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                 </button>
                 <button
                   onClick={() => {
-                    props.save(bboxes, fpboxes.length === 0, []);
+                    save(false);
                   }}
                 >
                   <Button green sm>
@@ -825,7 +830,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           <button
             type="button"
             onClick={() => {
-              props.save(bboxes, fpboxes.length === 0, props.labels);
+              save(true);
               setState({ ...state, showVerify: false });
             }}
           >
