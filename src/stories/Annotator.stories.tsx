@@ -74,7 +74,6 @@ export const SmallImage: Story = {
   },
 };
 
-
 export const ManyLabels: Story = {
   args: {
     imageUrl: 'https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back.jpg?raw=true',
@@ -179,5 +178,24 @@ export const ManyLabels: Story = {
       'dpd',
       'goat',
       'rabbit']
+  },
+};
+
+export const DefaultLabel: Story = {
+  args: {
+    imageUrl: 'https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back.jpg?raw=true',
+    annotations: [],
+    suggestions: [],
+    falsePositives: [],
+    labels: ['person',
+      'dhl',
+      'deer',
+      'dog',
+      'horse',
+      'package',
+      'waste_bin',
+      'an_post',
+      'bird'],
+    verifiedLabels: ['person'],
   },
 };

@@ -55,6 +55,7 @@ interface IImageAnnotationProps {
   back: () => void;
   imageUrl: string;
   labels: string[];
+  verifiedLabels: string[];
   userAnnotationCount: number;
 }
 
@@ -96,7 +97,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     showTutorial: props.userAnnotationCount === 0,
     drawStartX: 0,
     drawStartY: 0,
-    selectedLabel: props.labels[0],
+    selectedLabel: props.labels.find((l) => !(props.verifiedLabels ?? []).includes(l)) ?? props.labels[0],
     difficult: false,
     width: 1,
     height: 1,
