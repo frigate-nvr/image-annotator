@@ -55,6 +55,7 @@ interface IImageAnnotationProps {
   back: () => void;
   imageUrl: string;
   labels: string[];
+  manageLabelUrl?: string;
   verifiedLabels: string[];
   userAnnotationCount: number;
 }
@@ -774,6 +775,10 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                 </option>
               ))}
             </select>
+
+            {props.manageLabelUrl && (
+              <a className="text-primary-500 hover:text-primary-600 underline text-sm" href={props.manageLabelUrl} target="blank">Manage Label Options</a>
+            )}
           </div>
           <div className="flex items-center">
             <input

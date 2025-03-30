@@ -14,6 +14,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     imageUrl: 'https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back.jpg?raw=true',
+    manageLabelUrl: 'https://frigate.video',
     annotations: [],
     suggestions: [],
     falsePositives: [],
