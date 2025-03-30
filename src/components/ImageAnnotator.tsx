@@ -777,7 +777,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
             </select>
 
             {props.manageLabelUrl && (
-              <a className="text-primary-500 hover:text-primary-600 underline text-sm" href={props.manageLabelUrl} target="blank">Manage Label Options</a>
+              <a className="text-primary-500 hover:text-primary-600 underline text-sm" href={props.manageLabelUrl} target="_blank">Manage Label Options</a>
             )}
           </div>
           <div className="flex items-center">
