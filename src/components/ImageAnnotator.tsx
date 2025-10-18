@@ -73,6 +73,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     { codes: ["w"], action: "Add Box" },
     { codes: ["d"], action: "Mark Difficult" },
     { codes: ["s"], action: "Cycle Label" },
+    { codes: ["Shift", "s"], action: "Previous Label" },
     { codes: ["Tab"], action: "Select Next Box" },
     { codes: ["Del"], action: "Delete Box" },
     { codes: ["Esc"], action: "Deselect/Cancel" },
@@ -546,7 +547,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode} minScale={0.9}>
+      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode} minScale={0.9} initialScale={0.9}>
         {({ zoomIn, zoomOut }) => (
           <div
             className="flex h-screen min-w-[600px] flex-col bg-slate-900"
