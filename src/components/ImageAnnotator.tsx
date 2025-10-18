@@ -60,6 +60,8 @@ interface IImageAnnotationProps {
   userAnnotationCount: number;
 }
 
+type Pad = { leftPad: number; topPad: number };
+
 /**
  * A image annotation component.
  * @component
@@ -124,19 +126,27 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     const desiredWidth = maxHeight * aspectRatio;
     
     // if too wide when max height, then use maxWidth
+    let calculatedWidth;
+    let calculatedHeight;
+
     if (desiredWidth > maxWidth) {
-      setState({
-        ...state,
-        width: maxWidth,
-        height: Math.round(maxWidth/aspectRatio),
-      });
+      calculatedWidth = maxWidth;
+      calculatedHeight = Math.round(maxWidth/aspectRatio);
     } else {
-      setState({
-        ...state,
-        width: desiredWidth,
-        height: Math.round(desiredWidth/aspectRatio),
-      })
+      calculatedWidth = desiredWidth;
+      calculatedHeight = Math.round(desiredWidth/aspectRatio);
     }
+
+    setState({
+      ...state,
+      width: calculatedWidth,
+      height: calculatedHeight,
+    });
+
+    const leftPad = Math.max(0, (maxWidth*0.1) / 2);
+    const topPad = Math.max(0, (maxHeight*0.1) / 2);
+
+    return {leftPad, topPad};
   }
 
   const handleResize = useDebouncedCallback(() => {
@@ -507,8 +517,8 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
   };
 
-  const onLoad: ReactEventHandler<HTMLImageElement> = (_e) => {
-    resize();
+  const onLoad = (_e: React.SyntheticEvent<HTMLImageElement>): Pad => {
+    const pad = resize();
 
     setBBoxes(
       props.annotations
@@ -516,6 +526,8 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         .sort((a, b) => b.w * b.h - a.w * a.h),
     );
     setFPBoxes(props.falsePositives.sort((a, b) => b.w * b.h - a.w * a.h));
+
+    return pad
   };
 
   const onSaveLabel: MouseEventHandler<HTMLButtonElement> = () => {
@@ -547,8 +559,8 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   return (
     <>
-      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode} minScale={0.9} initialScale={0.9}>
-        {({ zoomIn, zoomOut }) => (
+      <TransformWrapper ref={transformRef} disabled={state.createMode || state.drawingMode} minScale={0.9}>
+        {({ zoomIn, zoomOut, setTransform }) => (
           <div
             className="flex h-screen min-w-[600px] flex-col bg-slate-900"
             onKeyDown={onKeyDown}
@@ -662,14 +674,16 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                   onMouseDown={onMouseDown}
                   onMouseUp={onMouseUp}
                   onMouseMove={onMouseMove}
-                  
                 >
                   <img
                     ref={ref}
                     className="col-start-1 row-start-1 h-full w-full"
                     alt="annotate"
                     src={props.imageUrl}
-                    onLoad={onLoad}
+                    onLoad={(e) => {
+                      const pad = onLoad(e);
+                      setTransform(pad.leftPad, pad.topPad, 0.9, 0)
+                    }}
                     style={{
                       width: state.width,
                       height: state.height,
