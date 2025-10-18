@@ -73,6 +73,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     { codes: ["w"], action: "Add Box" },
     { codes: ["d"], action: "Mark Difficult" },
     { codes: ["s"], action: "Cycle Label" },
+    { codes: ["Shift", "s"], action: "Previous Label" },
     { codes: ["Tab"], action: "Select Next Box" },
     { codes: ["Del"], action: "Delete Box" },
     { codes: ["Esc"], action: "Deselect/Cancel" },
