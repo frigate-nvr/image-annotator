@@ -1,6 +1,6 @@
 {
   "name": "@frigate-nvr/image-annotator",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "image annotator designed for frigate nvr",
   "exports": "./dist/index.js",
   "module": "./dist/index.js",
