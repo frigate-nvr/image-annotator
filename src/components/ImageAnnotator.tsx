@@ -142,8 +142,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       height: calculatedHeight,
     });
 
-    const leftPad = Math.max(0, (maxWidth*0.1) / 2);
-    const topPad = Math.max(0, (maxHeight*0.1) / 2);
+
+    const leftPad = (calculatedWidth * 0.1) / 2;
+    const topPad = (calculatedHeight * 0.1) / 2;
 
     return {leftPad, topPad};
   }
