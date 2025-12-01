@@ -12,7 +12,6 @@ import { Position, DraggableData } from "react-rnd";
 import { Button } from "./Button";
 import { Crosshairs } from "./Crosshairs";
 import { InfoDialog } from "./InfoDialog";
-import { LabelDialog } from "./LabelDialog";
 import { VerifyDialog } from "./VerifyDialog";
 import { BoundingBox, BoundingBoxType } from "./BoundingBox";
 import { Annotation } from "../types/Annotation";
@@ -27,7 +26,6 @@ interface EditorState {
   drawStartX: number;
   drawStartY: number;
   selectedBox?: string;
-  showLabeler: boolean;
   selectedLabel: string;
   difficult: boolean;
   height: number;
@@ -92,7 +90,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     createMode: false,
     drawingMode: false,
     showBoxes: true,
-    showLabeler: false,
     showHelp: false,
     showVerify: false,
     showDelete: false,
@@ -530,25 +527,21 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     return pad
   };
 
-  const onSaveLabel: MouseEventHandler<HTMLButtonElement> = () => {
-    setState({ ...state, showLabeler: false });
+
+  // id field required, label and/or difficult at least one required
+  const onSaveLabel = (newAnnotation: { id: string } & ({ label: string; difficult?: boolean } | { difficult: boolean; label?: string })) => {
     setBBoxes((prev) =>
       prev.map((a) => {
-        if (a.id === state.selectedBox) {
+        if (a.id === newAnnotation.id) {
           return {
             ...a,
-            label: state.selectedLabel,
-            difficult: state.difficult,
+            label: newAnnotation.label ?? a.label,
+            difficult: newAnnotation.difficult ?? a.difficult,
           };
         }
         return a;
       }),
     );
-  };
-
-  const onCancelLabel = () => {
-    setState({ ...state, showLabeler: false });
-    setBBoxes((prev) => prev.filter((a) => a.label));
   };
   
   const save = (verified: boolean) => {
@@ -693,6 +686,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     <BoundingBox
                       type={BoundingBoxType.falsePositive}
                       label={box.label ?? ""}
+                      allLabels={props.labels}
                       key={box.id}
                       zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
                       x={box.x * state.width}
@@ -723,6 +717,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                           : BoundingBoxType.truePositive
                       }
                       label={box.label ?? ""}
+                      allLabels={props.labels}
                       difficult={box.difficult}
                       key={box.id}
                       zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
@@ -747,8 +742,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                       onClickDelete={() => {
                         deleteBox(box.id);
                       }}
-                      onClickEdit={() => {
-                        setState({ ...state, showLabeler: true });
+                      onSelectLabel={(label) => {
+                        setState({ ...state, selectedLabel: label });
+                        onSaveLabel({ id: box.id, label: label });
+                      }}
+                      onToggleDifficult={() => {
+                        setState({ ...state, difficult: !state.difficult });
+                        onSaveLabel({ id: box.id, difficult: !state.difficult });
                       }}
                     />
                   ))}
@@ -762,55 +762,6 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
           </div>
         )}
       </TransformWrapper>
-      <LabelDialog
-        title="Annotate"
-        show={state.showLabeler}
-        cancelText="Cancel"
-        button={
-          <button type="button" onClick={onSaveLabel}>
-            <Button sm green>
-              Save
-            </Button>
-          </button>
-        }
-        handleCancel={onCancelLabel}
-      >
-        <div className="my-2 grid grid-cols-1 gap-y-2">
-          <div>
-            <select
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-              value={state.selectedLabel}
-              onChange={(e) => {
-                setState({ ...state, selectedLabel: e.target.value });
-              }}
-            >
-              {props.labels.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-
-            {props.manageLabelUrl && (
-              <a className="text-primary-500 hover:text-primary-600 underline text-sm" href={props.manageLabelUrl} target="_blank">Manage Label Options</a>
-            )}
-          </div>
-          <div className="flex items-center">
-            <input
-              id="difficult"
-              className="border-gray-300 text-primary-600 shadow-sm hover:border-gray-300 focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50 focus:ring-offset-0 rounded"
-              type="checkbox"
-              checked={state.difficult}
-              onChange={(e) => {
-                setState({ ...state, difficult: e.target.checked });
-              }}
-            />
-            <label htmlFor="difficult" className="ml-2">
-              Difficult?
-            </label>
-          </div>
-        </div>
-      </LabelDialog>
       <InfoDialog
         title="Keyboard shortcuts"
         show={state.showHelp}

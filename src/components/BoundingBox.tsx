@@ -24,8 +24,10 @@ interface IBoundingBoxProps {
   onResizeStop?: RndResizeCallback;
   onMouseDown?: (e: MouseEvent) => void;
   onClickDelete?: MouseEventHandler<HTMLDivElement>;
-  onClickEdit?: MouseEventHandler<HTMLDivElement>;
+  onSelectLabel?: (label: string) => void;
+  onToggleDifficult?: () => void;
   label: string;
+  allLabels: string[];
 }
 
 const selectedColors = {
@@ -53,6 +55,8 @@ const BoundingBox = (props: IBoundingBoxProps) => {
     : unselectedColors[props.type];
 
   const editable = props.type !== BoundingBoxType.falsePositive;
+  
+  const belowHalf = (props.y / window.screen.height) > 0.3;
 
   if (props.difficult) {
     color = props.selected ? "#fae352" : "#ad9e3d";
@@ -166,12 +170,13 @@ const BoundingBox = (props: IBoundingBoxProps) => {
         {props.label}
       </mark>
       <div
-        className="absolute right-[-27px] z-20 grid grid-rows-1"
+        className="absolute z-20 ml-1 -mt-1.5 grid grid-rows-1"
         style={{
           visibility: props.selected ? "visible" : "hidden",
           transform: `scale(${(1 / scale).toString()})`,
-          transformOrigin: "top left",
-          top: -13 * (1 / scale),
+          left: `${props.w + 1}px`,
+          top: belowHalf ? "auto" : `${((0.5 / scale))}px`,
+          bottom: belowHalf ? 0 : "auto",
         }}
       >
         <div
@@ -193,27 +198,37 @@ const BoundingBox = (props: IBoundingBoxProps) => {
             />
           </svg>
         </div>
-        {editable && (
+
+        {editable &&
+
+
           <div
-            className="flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-blue-400"
-            onClick={props.onClickEdit}
+            className="bg-black/80 px-1 py-1 pr-1.5 mt-0.5"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onWheelCapture={(e) => e.stopPropagation()}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
+            <div className="max-h-40 overflow-y-auto">
+              {props.allLabels.map((label) => (
+                <div
+                  key={label}
+                  className="text-white text-sm hover:text-white/75 hover:underline cursor-pointer -mt-1"
+                  style={{ fontWeight: label === props.label ? "bold" : "normal", color: label === props.label ? "lightgreen" : "white" }}
+                  onClick={() => props.onSelectLabel!(label)}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center mt-1">
+              <input type="checkbox" className="w-3 h-3" checked={props.difficult} onChange={props.onToggleDifficult} />
+              <label className="text-white text-xs ml-2 font-semibold">Difficult</label>
+            </div>
           </div>
-        )}
+
+
+        }
+
       </div>
     </Rnd>
   );
