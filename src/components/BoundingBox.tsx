@@ -213,6 +213,7 @@ const BoundingBox = (props: IBoundingBoxProps) => {
                 <div
                   key={label}
                   className="text-white text-sm hover:text-white/75 hover:underline cursor-pointer -mt-1"
+                  style={{ fontWeight: label === props.label ? "bold" : "normal", color: label === props.label ? "lightgreen" : "white" }}
                   onClick={() => props.onSelectLabel!(label)}
                 >
                   {label}
