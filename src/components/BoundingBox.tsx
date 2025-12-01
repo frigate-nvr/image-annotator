@@ -55,6 +55,8 @@ const BoundingBox = (props: IBoundingBoxProps) => {
     : unselectedColors[props.type];
 
   const editable = props.type !== BoundingBoxType.falsePositive;
+  
+  const belowHalf = (props.y / window.screen.height) > 0.3;
 
   if (props.difficult) {
     color = props.selected ? "#fae352" : "#ad9e3d";
@@ -172,8 +174,9 @@ const BoundingBox = (props: IBoundingBoxProps) => {
         style={{
           visibility: props.selected ? "visible" : "hidden",
           transform: `scale(${(1 / scale).toString()})`,
-          left: `${(props.w * (0.5 / scale)) + 30}px`,
-          top: `${(props.w * (0.5 / scale)) - 40}px`
+          left: `${props.w + 1}px`,
+          top: belowHalf ? "auto" : `${((0.5 / scale))}px`,
+          bottom: belowHalf ? 0 : "auto",
         }}
       >
         <div
@@ -201,16 +204,21 @@ const BoundingBox = (props: IBoundingBoxProps) => {
 
           <div
             className="bg-black/80 px-1 py-1 pr-1.5 mt-0.5"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onWheelCapture={(e) => e.stopPropagation()}
           >
-            {props.allLabels.map((label) => (
-              <div
-                key={label}
-                className="text-white text-sm hover:text-white/75 hover:underline cursor-pointer -mt-1"
-                onClick={() => props.onSelectLabel!(label)}
-              >
-                {label}
-              </div>
-            ))}
+            <div className="max-h-40 overflow-y-auto">
+              {props.allLabels.map((label) => (
+                <div
+                  key={label}
+                  className="text-white text-sm hover:text-white/75 hover:underline cursor-pointer -mt-1"
+                  onClick={() => props.onSelectLabel!(label)}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
             <div className="flex items-center mt-1">
               <input type="checkbox" className="w-3 h-3" checked={props.difficult} onChange={props.onToggleDifficult} />
               <label className="text-white text-xs ml-2 font-semibold">Difficult</label>
