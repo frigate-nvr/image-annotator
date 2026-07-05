@@ -496,6 +496,42 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     setBBoxes((prev) => prev.filter((a) => a.id !== boxId))
   }
 
+  // the suggestion is pending unless rejected or already applied
+  const pendingSuggestion = (a: Annotation) =>
+    a.suggested_change && !a.suggested_change.rejected && a.suggested_change.label !== a.label
+      ? a.suggested_change.label
+      : undefined
+
+  const acceptSuggestion = (boxId: string) => {
+    const suggested = getBox(boxId)?.suggested_change?.label
+    if (!suggested) {
+      return
+    }
+    setDirty(true)
+    setBBoxes((prev) =>
+      prev.map((a) => {
+        if (a.id === boxId) {
+          const { suggested_change: _dropped, ...rest } = a
+          return { ...rest, label: suggested }
+        }
+        return a
+      })
+    )
+    setState({ ...state, selectedLabel: suggested })
+  }
+
+  const rejectSuggestion = (boxId: string) => {
+    setDirty(true)
+    setBBoxes((prev) =>
+      prev.map((a) => {
+        if (a.id === boxId && a.suggested_change) {
+          return { ...a, suggested_change: { ...a.suggested_change, rejected: true } }
+        }
+        return a
+      })
+    )
+  }
+
   const deleteFP = (boxId: string) => {
     setDirty(true)
     setFPBoxes((prev) => prev.filter((a) => a.id !== boxId))
@@ -1183,6 +1219,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                         }
                         label={box.label ?? ''}
                         difficult={box.difficult}
+                        suggestedLabel={pendingSuggestion(box)}
+                        onClickAcceptSuggestion={() => {
+                          acceptSuggestion(box.id)
+                        }}
+                        onClickRejectSuggestion={() => {
+                          rejectSuggestion(box.id)
+                        }}
                         key={box.id}
                         zIndex={box.id === state.selectedBox ? 1 : defaultZIndex}
                         x={box.x * state.width}

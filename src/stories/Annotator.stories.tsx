@@ -215,6 +215,44 @@ export const SegmentationTaintedCanvas: Story = {
   },
 }
 
+export const WithRelabelSuggestion: Story = {
+  args: {
+    imageUrl: BACK,
+    annotations: [
+      {
+        id: 'a_1',
+        x: 0.15,
+        y: 0.2,
+        w: 0.2,
+        h: 0.25,
+        label: 'car',
+        suggested_change: { label: 'garbage_truck', score: 0.87 },
+      },
+      {
+        id: 'a_2',
+        x: 0.55,
+        y: 0.2,
+        w: 0.2,
+        h: 0.25,
+        label: 'car',
+        // rejected tombstone: chip and tint must NOT render
+        suggested_change: { label: 'garbage_truck', score: 0.62, rejected: true },
+      },
+      {
+        id: 'a_3',
+        x: 0.4,
+        y: 0.6,
+        w: 0.15,
+        h: 0.2,
+        label: 'dog',
+      },
+    ],
+    suggestions: [],
+    falsePositives: [],
+    labels: ['person', 'car', 'dog', 'garbage_truck'],
+  },
+}
+
 export const WithNavigation: Story = {
   args: {
     imageUrl: BACK,
