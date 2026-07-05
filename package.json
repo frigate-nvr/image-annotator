@@ -1,12 +1,13 @@
 {
   "name": "@frigate-nvr/image-annotator",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "image annotator designed for frigate nvr",
   "exports": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "/dist"
+    "/dist",
+    "/scripts"
   ],
   "publishConfig": {
     "access": "public"
@@ -18,7 +19,9 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "tsc && vite build && storybook build"
+    "build-storybook": "tsc && vite build && storybook build",
+    "download-models": "node scripts/download-models.mjs",
+    "test": "vitest run"
   },
   "author": "blakeblackshear",
   "license": "MIT",
@@ -55,7 +58,8 @@
     "typescript-eslint": "^7.17.0",
     "vite": "^5.3.5",
     "vite-plugin-dts": "^4.0.0-beta.2",
-    "vite-plugin-lib-inject-css": "^2.1.1"
+    "vite-plugin-lib-inject-css": "^2.1.1",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
@@ -64,6 +68,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.1.2",
+    "@huggingface/transformers": "4.2.0",
     "react-rnd": "^10.4.11",
     "react-zoom-pan-pinch": "^3.6.1",
     "use-debounce": "^10.0.1"

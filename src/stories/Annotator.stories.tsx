@@ -190,6 +190,31 @@ const BACK =
 const BACK_SMALL =
   'https://github.com/frigate-nvr/image-annotator/blob/main/src/stories/assets/back_small.jpg?raw=true'
 
+// direct raw host; the github.com ?raw=true redirect does not send CORS
+// headers, which blocks crossOrigin image loads entirely
+const BACK_CORS =
+  'https://raw.githubusercontent.com/frigate-nvr/image-annotator/main/src/stories/assets/back.jpg'
+
+export const WithSegmentation: Story = {
+  args: {
+    imageUrl: BACK_CORS,
+    crossOrigin: 'anonymous',
+    segmentation: { modelPath: '/models' },
+    annotations: [],
+    suggestions: [],
+    falsePositives: [],
+    labels: ['person', 'car', 'dog'],
+  },
+}
+
+// exercises the graceful tainted-canvas error path (no crossOrigin)
+export const SegmentationTaintedCanvas: Story = {
+  args: {
+    ...WithSegmentation.args,
+    crossOrigin: undefined,
+  },
+}
+
 export const WithNavigation: Story = {
   args: {
     imageUrl: BACK,

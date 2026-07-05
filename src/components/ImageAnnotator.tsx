@@ -16,15 +16,21 @@ import { LabelDialog } from './LabelDialog'
 import { ThumbnailPanel } from './ThumbnailPanel'
 import { VerifyDialog } from './VerifyDialog'
 import { BoundingBox, BoundingBoxType } from './BoundingBox'
+import { maskToBoundingBox } from '../lib/maskUtils'
+import type { DecodedMask, SamSession } from '../lib/sam'
 import { Annotation } from '../types/Annotation'
 import { FalsePositive } from '../types/FalsePositive'
 import { INavThumbnail } from '../types/NavThumbnail'
 import { ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { useDebouncedCallback } from 'use-debounce'
 
+type SegmentStatus = 'idle' | 'loading-model' | 'encoding' | 'ready' | 'error' | 'unsupported'
+
 interface EditorState {
   createMode: boolean
   drawingMode: boolean
+  segmentMode: boolean
+  segmentStatus: SegmentStatus
   showBoxes: boolean
   drawStartX: number
   drawStartY: number
@@ -49,6 +55,11 @@ interface IImageAnnotationProps {
   falsePositives: FalsePositive[]
   nextImage: () => void
   previousImage?: () => void
+  // required for segmentation pixel readback of cross-origin images
+  crossOrigin?: 'anonymous' | 'use-credentials'
+  // enables click-to-segment; modelPath serves the self-hosted model
+  // assets produced by scripts/download-models.mjs
+  segmentation?: { modelPath: string }
   // thumbnails for the side panel, ordered newest (top) to oldest (bottom)
   previousImages?: INavThumbnail[]
   nextImages?: INavThumbnail[]
@@ -90,6 +101,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     { codes: ['Esc'], action: 'Deselect/Cancel' },
     { codes: ['← ↑ → ↓'], action: 'Move Box' },
     { codes: ['Shift', '← ↑ → ↓'], action: 'Resize Box' },
+    { codes: ['m'], action: 'Magic segment (click object)' },
     { codes: ['←'], action: 'Previous Image (no box selected)' },
     { codes: ['→'], action: 'Next Image (no box selected)' },
     { codes: ['f'], action: 'Toggle Unselected Boxes' },
@@ -103,6 +115,8 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const [state, setState] = useState<EditorState>({
     createMode: false,
     drawingMode: false,
+    segmentMode: false,
+    segmentStatus: 'idle',
     showBoxes: true,
     showLabeler: false,
     showHelp: false,
@@ -133,6 +147,18 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const [dirty, setDirty] = useState(false)
 
   const pendingNavRef = useRef<(() => void) | null>(null)
+
+  // segmentation refs; the hover mask is drawn imperatively so decodes
+  // don't cause react re-renders
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null)
+  const samSessionRef = useRef<SamSession | null>(null)
+  const pendingPointRef = useRef<{ nx: number; ny: number } | null>(null)
+  const decodeBusyRef = useRef(false)
+  const lastDecodeRef = useRef<{ nx: number; ny: number; result: DecodedMask } | null>(null)
+  const decodeTimesRef = useRef<number[]>([])
+  const hoverDisabledRef = useRef(false)
+  // invalidates in-flight segmentation work on mode exit or image change
+  const segmentGenRef = useRef(0)
 
   const resize = () => {
     const naturalHeight = ref.current?.naturalHeight ?? 1
@@ -183,6 +209,22 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
   }, [handleResize])
 
+  // embeddings belong to a single image; exit segment mode and drop
+  // them whenever the image changes (covers non-remounting consumers)
+  useEffect(() => {
+    return () => {
+      segmentGenRef.current += 1
+      pendingPointRef.current = null
+      samSessionRef.current?.clearCache()
+      lastDecodeRef.current = null
+      setState((prev) =>
+        prev.segmentMode || prev.segmentStatus !== 'idle'
+          ? { ...prev, segmentMode: false, segmentStatus: 'idle' }
+          : prev
+      )
+    }
+  }, [props.imageUrl])
+
   const onResizeStop = (elem: HTMLElement, position: Position, boxId: string) => {
     setDirty(true)
     setBBoxes((prev) =>
@@ -217,6 +259,15 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   }
 
   const onMouseDown: MouseEventHandler<HTMLImageElement> = (e) => {
+    if (state.segmentMode) {
+      if (state.segmentStatus === 'ready') {
+        const point = segmentPointFromEvent(e)
+        if (point) {
+          void acceptSegmentClick(point)
+        }
+      }
+      return
+    }
     if (state.createMode) {
       const scale = transformRef.current?.instance.transformState.scale ?? 1
       const bounds = ref.current?.getBoundingClientRect()
@@ -307,6 +358,22 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   }
 
   const onMouseMove: MouseEventHandler<HTMLImageElement> = (e) => {
+    if (state.segmentMode) {
+      if (state.segmentStatus === 'ready' && !hoverDisabledRef.current) {
+        const point = segmentPointFromEvent(e)
+        const last = lastDecodeRef.current
+        // skip redundant decodes while idle-hovering
+        const moved =
+          !last ||
+          Math.abs(last.nx - (point?.nx ?? 0)) * state.width > 4 ||
+          Math.abs(last.ny - (point?.ny ?? 0)) * state.height > 4
+        if (point && moved) {
+          pendingPointRef.current = point
+          void pumpDecodes()
+        }
+      }
+      return
+    }
     if (state.drawingMode) {
       setBBoxes((prev) =>
         prev.map((a) => {
@@ -331,6 +398,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   }
 
   const clickCreate: MouseEventHandler<HTMLButtonElement> = () => {
+    if (!state.createMode && state.segmentMode) {
+      segmentGenRef.current += 1
+      pendingPointRef.current = null
+      clearMaskOverlay()
+      setState({ ...state, createMode: true, segmentMode: false, selectedBox: undefined })
+      return
+    }
     setState({ ...state, createMode: !state.createMode })
   }
 
@@ -450,7 +524,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   const stepSize = 5 / (transformRef.current?.instance.transformState.scale ?? 1)
   const onKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (e.code === 'Escape') {
-      if (state.createMode) {
+      if (state.segmentMode) {
+        toggleSegmentMode()
+      } else if (state.createMode) {
         setState({ ...state, createMode: false })
       } else {
         setState({ ...state, selectedBox: undefined })
@@ -458,10 +534,18 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
     if (e.code === 'KeyW') {
       if (!state.createMode) {
-        setState({ ...state, createMode: true, selectedBox: undefined })
+        if (state.segmentMode) {
+          segmentGenRef.current += 1
+          pendingPointRef.current = null
+          clearMaskOverlay()
+        }
+        setState({ ...state, createMode: true, segmentMode: false, selectedBox: undefined })
       } else {
         setState({ ...state, createMode: false })
       }
+    }
+    if (e.code === 'KeyM') {
+      toggleSegmentMode()
     }
     if (e.code === 'KeyF') {
       setState({ ...state, showBoxes: !state.showBoxes })
@@ -577,6 +661,197 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     )
   }
 
+  const clearMaskOverlay = () => {
+    const canvas = maskCanvasRef.current
+    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
+    lastDecodeRef.current = null
+  }
+
+  const drawMaskOverlay = (result: DecodedMask) => {
+    const canvas = maskCanvasRef.current
+    if (!canvas) {
+      return
+    }
+    if (canvas.width !== result.width || canvas.height !== result.height) {
+      canvas.width = result.width
+      canvas.height = result.height
+    }
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      return
+    }
+    const imageData = ctx.createImageData(result.width, result.height)
+    const pixels = imageData.data
+    for (let i = 0; i < result.mask.length; i += 1) {
+      if (result.mask[i]) {
+        const offset = i * 4
+        // primary-400 tint
+        pixels[offset] = 99
+        pixels[offset + 1] = 179
+        pixels[offset + 2] = 237
+        pixels[offset + 3] = 115
+      }
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.putImageData(imageData, 0, 0)
+  }
+
+  const initSegmentation = async () => {
+    if (!props.segmentation || !ref.current) {
+      return
+    }
+    const generation = segmentGenRef.current
+    const fail = (e: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn('[image-annotator] segmentation unavailable:', e)
+      if (segmentGenRef.current === generation) {
+        setState((prev) => ({ ...prev, segmentStatus: 'error' }))
+      }
+    }
+
+    try {
+      setState((prev) => ({ ...prev, segmentStatus: 'loading-model' }))
+      const sam = await import('../lib/sam')
+      if (!sam.isSupported()) {
+        if (segmentGenRef.current === generation) {
+          setState((prev) => ({ ...prev, segmentStatus: 'unsupported' }))
+        }
+        return
+      }
+      const session = await sam.getSession(props.segmentation.modelPath)
+      if (segmentGenRef.current !== generation) {
+        return
+      }
+      samSessionRef.current = session
+
+      setState((prev) => ({ ...prev, segmentStatus: 'encoding' }))
+      await session.encodeImage(ref.current!, props.imageUrl)
+      if (segmentGenRef.current === generation) {
+        setState((prev) => ({ ...prev, segmentStatus: 'ready' }))
+      }
+    } catch (e) {
+      fail(e)
+    }
+  }
+
+  const toggleSegmentMode = () => {
+    if (!props.segmentation) {
+      return
+    }
+    if (state.segmentMode) {
+      segmentGenRef.current += 1
+      pendingPointRef.current = null
+      clearMaskOverlay()
+      setState({ ...state, segmentMode: false })
+      return
+    }
+    setState({
+      ...state,
+      segmentMode: true,
+      createMode: false,
+      drawingMode: false,
+      selectedBox: undefined,
+    })
+    if (state.segmentStatus === 'idle' || state.segmentStatus === 'error') {
+      void initSegmentation()
+    }
+  }
+
+  // one decode in flight; the latest hover point wins
+  const pumpDecodes = async () => {
+    const session = samSessionRef.current
+    if (decodeBusyRef.current || !session) {
+      return
+    }
+    decodeBusyRef.current = true
+    const generation = segmentGenRef.current
+    try {
+      while (pendingPointRef.current) {
+        const point = pendingPointRef.current
+        pendingPointRef.current = null
+        const started = performance.now()
+        // eslint-disable-next-line no-await-in-loop
+        const result = await session.decodePoint(point.nx, point.ny)
+        if (segmentGenRef.current !== generation) {
+          return
+        }
+        lastDecodeRef.current = { ...point, result }
+        drawMaskOverlay(result)
+
+        // adaptive degrade: stop hover previews when decodes are slow
+        const times = decodeTimesRef.current
+        if (times.length < 3) {
+          times.push(performance.now() - started)
+          if (times.length === 3 && [...times].sort((a, b) => a - b)[1]! > 400) {
+            hoverDisabledRef.current = true
+          }
+        }
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[image-annotator] mask decode failed:', e)
+    } finally {
+      decodeBusyRef.current = false
+    }
+  }
+
+  const segmentPointFromEvent = (e: { clientX: number; clientY: number }) => {
+    const scale = transformRef.current?.instance.transformState.scale ?? 1
+    const bounds = ref.current?.getBoundingClientRect()
+    const nx = (e.clientX - (bounds?.left ?? 0)) / scale / state.width
+    const ny = (e.clientY - (bounds?.top ?? 0)) / scale / state.height
+    if (nx < 0 || nx > 1 || ny < 0 || ny > 1) {
+      return null
+    }
+    return { nx, ny }
+  }
+
+  const acceptSegmentClick = async (point: { nx: number; ny: number }) => {
+    const session = samSessionRef.current
+    if (!session) {
+      return
+    }
+    const generation = segmentGenRef.current
+
+    let decoded = lastDecodeRef.current
+    const closeEnough =
+      decoded &&
+      Math.abs(decoded.nx - point.nx) * state.width < 2 &&
+      Math.abs(decoded.ny - point.ny) * state.height < 2
+    if (!decoded || !closeEnough) {
+      try {
+        const result = await session.decodePoint(point.nx, point.ny)
+        decoded = { ...point, result }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[image-annotator] mask decode failed:', e)
+        return
+      }
+    }
+    if (segmentGenRef.current !== generation) {
+      return
+    }
+
+    const box = maskToBoundingBox(decoded.result.mask, decoded.result.width, decoded.result.height)
+    if (!box) {
+      return
+    }
+
+    const newId = Date.now().toString()
+    setDirty(true)
+    setBBoxes((prev) => [
+      ...prev,
+      {
+        id: newId,
+        label: state.selectedLabel,
+        difficult: false,
+        ...box,
+      },
+    ])
+    setState((prev) => ({ ...prev, selectedBox: newId }))
+    clearMaskOverlay()
+  }
+
   // navigation away from the image passes through here so unsaved
   // edits get a discard confirmation first
   const guardedNavigate = (nav?: () => void) => {
@@ -603,7 +878,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     <>
       <TransformWrapper
         ref={transformRef}
-        disabled={state.createMode || state.drawingMode}
+        disabled={state.createMode || state.drawingMode || state.segmentMode}
         minScale={0.9}
       >
         {({ zoomIn, zoomOut, setTransform }) => (
@@ -715,6 +990,67 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     Add (w)
                   </Button>
                 </button>
+                {props.segmentation && (
+                  <button
+                    type='button'
+                    disabled={state.segmentStatus === 'unsupported'}
+                    title={
+                      state.segmentStatus === 'error' || state.segmentStatus === 'unsupported'
+                        ? 'Segmentation unavailable'
+                        : 'Click an object to box it automatically'
+                    }
+                    onClick={toggleSegmentMode}
+                  >
+                    <span className={state.segmentMode ? 'rounded-md ring-2 ring-primary-500' : ''}>
+                      <Button
+                        secondary
+                        sm
+                        disabled={state.segmentStatus === 'unsupported'}
+                      >
+                        {state.segmentMode &&
+                        (state.segmentStatus === 'loading-model' ||
+                          state.segmentStatus === 'encoding') ? (
+                          <svg
+                            xmlns='http://www.w3.org/2000/svg'
+                            className='mr-1 h-4 w-4 animate-spin'
+                            fill='none'
+                            viewBox='0 0 24 24'
+                          >
+                            <circle
+                              className='opacity-25'
+                              cx='12'
+                              cy='12'
+                              r='10'
+                              stroke='currentColor'
+                              strokeWidth='4'
+                            />
+                            <path
+                              className='opacity-75'
+                              fill='currentColor'
+                              d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z'
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns='http://www.w3.org/2000/svg'
+                            className='mr-1 h-4 w-4'
+                            fill='none'
+                            viewBox='0 0 24 24'
+                            stroke='currentColor'
+                          >
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth='2'
+                              d='M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'
+                            />
+                          </svg>
+                        )}
+                        Magic (m)
+                      </Button>
+                    </span>
+                  </button>
+                )}
               </div>
               <div className='flex-initial'>
                 <button
@@ -762,7 +1098,16 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                 </button>
               </div>
             </div>
-            <div className='flex min-h-0 flex-auto'>
+            <div className='relative flex min-h-0 flex-auto'>
+              {state.segmentMode && state.segmentStatus !== 'ready' && (
+                <div className='absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded bg-slate-800/80 px-2 py-1 text-xs text-slate-200'>
+                  {state.segmentStatus === 'loading-model' && 'Loading model…'}
+                  {state.segmentStatus === 'encoding' && 'Analyzing image…'}
+                  {(state.segmentStatus === 'error' || state.segmentStatus === 'unsupported') &&
+                    'Segmentation unavailable'}
+                  {state.segmentStatus === 'idle' && 'Preparing…'}
+                </div>
+              )}
               <div
                 ref={editorRef}
                 className='grid flex-auto place-content-center'
@@ -773,16 +1118,33 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     onMouseDown={onMouseDown}
                     onMouseUp={onMouseUp}
                     onMouseMove={onMouseMove}
+                    onMouseLeave={() => {
+                      if (state.segmentMode) {
+                        pendingPointRef.current = null
+                        clearMaskOverlay()
+                      }
+                    }}
                   >
                     <img
                       ref={ref}
                       className='col-start-1 row-start-1 h-full w-full'
                       alt='annotate'
                       src={props.imageUrl}
+                      crossOrigin={props.crossOrigin}
                       onLoad={(e) => {
                         const pad = onLoad(e)
                         setTransform(pad.leftPad, pad.topPad, 0.9, 0)
                       }}
+                      style={{
+                        width: state.width,
+                        height: state.height,
+                      }}
+                    />
+                    <canvas
+                      ref={maskCanvasRef}
+                      className={`pointer-events-none col-start-1 row-start-1 ${
+                        state.segmentMode ? 'z-10' : '-z-10'
+                      }`}
                       style={{
                         width: state.width,
                         height: state.height,
@@ -801,7 +1163,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                         initialScale={transformRef.current?.instance.transformState.scale}
                         selected={box.id === state.selectedBox}
                         onMouseDown={(e: { stopPropagation: () => void }) => {
-                          if (!state.createMode) {
+                          if (!state.createMode && !state.segmentMode) {
                             onClickBBox(box.id)
                             e.stopPropagation()
                           }
@@ -830,7 +1192,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                         initialScale={transformRef.current?.instance.transformState.scale}
                         selected={box.id === state.selectedBox}
                         onMouseDown={(e: { stopPropagation: () => void }) => {
-                          if (!state.createMode) {
+                          if (!state.createMode && !state.segmentMode) {
                             onClickBBox(box.id)
                             e.stopPropagation()
                           }

@@ -17,7 +17,10 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ["react", "react-dom", 'react/jsx-runtime', "tailwindcss"],
+      // @huggingface/transformers stays external so its wasm assets
+      // aren't inlined into the bundle (vite lib mode inlines assets);
+      // it is a regular dependency, so consumers install it automatically
+      external: ["react", "react-dom", 'react/jsx-runtime', "tailwindcss", "@huggingface/transformers"],
       input: Object.fromEntries(
         globSync(['src/components/**/*.tsx', 'src/index.ts']).map((file) => {
           // This remove `src/` as well as the file extension from each
