@@ -261,6 +261,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
               state.height;
 
             if (
+              state.selectedLabel &&
               Math.min(
                 Math.abs(state.drawStartX - x),
                 Math.abs(state.drawStartY - y),
@@ -326,7 +327,14 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
     }
   };
 
+  // a box drawn without a label cannot be saved, so creation is only
+  // allowed when the camera has at least one label to assign
+  const canCreate = props.labels.length > 0;
+
   const clickCreate: MouseEventHandler<HTMLButtonElement> = () => {
+    if (!canCreate) {
+      return;
+    }
     setState({ ...state, createMode: !state.createMode });
   };
 
@@ -391,16 +399,23 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const cycleLabel = (boxId: string, reverse = false) => {
+    const count = props.labels.length;
+    if (count === 0) {
+      return;
+    }
+
     const currentLabelIndex = props.labels.findIndex(
       (label) => state.selectedLabel === label,
     );
-    const lastIndex = props.labels.length - 1;
 
-    let newIndex = 0;
-    if (reverse) {
-      newIndex = currentLabelIndex === 0 ? lastIndex : currentLabelIndex - 1;
+    // the box's label can be missing from the list when it was removed from
+    // the camera, so start from the appropriate end instead of indexing
+    // before the first entry, which produced an undefined label
+    let newIndex: number;
+    if (currentLabelIndex === -1) {
+      newIndex = reverse ? count - 1 : 0;
     } else {
-      newIndex = currentLabelIndex === lastIndex ? 0 : currentLabelIndex + 1;
+      newIndex = (currentLabelIndex + (reverse ? -1 : 1) + count) % count;
     }
     const newLabel = props.labels[newIndex];
     setBBoxes((prev) =>
@@ -454,7 +469,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         setState({ ...state, selectedBox: undefined });
       }
     }
-    if (e.code === "KeyW") {
+    if (e.code === "KeyW" && canCreate) {
       if (!state.createMode) {
         setState({ ...state, createMode: true, selectedBox: undefined });
       } else {
@@ -541,6 +556,10 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
 
   const onSaveLabel: MouseEventHandler<HTMLButtonElement> = () => {
+    if (!state.selectedLabel) {
+      onCancelLabel();
+      return;
+    }
     setState({ ...state, showLabeler: false });
     setBBoxes((prev) =>
       prev.map((a) => {
@@ -563,6 +582,16 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   
   const save = (verified: boolean) => {
     if (!imageLoaded) {
+      return;
+    }
+    const unlabeled = bboxes.find((b) => !b.label);
+    if (unlabeled) {
+      setState({
+        ...state,
+        selectedBox: unlabeled.id,
+        selectedLabel: state.selectedLabel ?? props.labels[0],
+        showLabeler: true,
+      });
       return;
     }
     props.save(bboxes, props.suggestions.map((s) => s.id), fpboxes.length === 0, verified ? props.labels : []);
@@ -634,8 +663,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
                     </svg>
                   </Button>
                 </button>
-                <button type="button" onClick={clickCreate}>
-                  <Button secondary sm>
+                <button
+                  type="button"
+                  disabled={!canCreate}
+                  title={canCreate ? undefined : 'Add labels to this camera before annotating'}
+                  onClick={clickCreate}
+                >
+                  <Button secondary sm disabled={!canCreate}>
                     Add (w)
                   </Button>
                 </button>

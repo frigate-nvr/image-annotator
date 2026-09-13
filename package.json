@@ -1,6 +1,6 @@
 {
   "name": "@frigate-nvr/image-annotator",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "image annotator designed for frigate nvr",
   "repository": {
     "type": "git",
