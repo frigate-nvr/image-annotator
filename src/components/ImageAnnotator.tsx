@@ -88,6 +88,11 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
 
   const [fpboxes, setFPBoxes] = useState<FalsePositive[]>([]);
 
+  // bboxes and fpboxes are only copied from props once the image fires onLoad.
+  // Saving before that sends empty lists, which wipes the image's annotations
+  // and false positives, so saves are refused until the image has loaded.
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   const [state, setState] = useState<EditorState>({
     createMode: false,
     drawingMode: false,
@@ -161,7 +166,11 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
       window.removeEventListener('resize', handleResize);
     };
   }, [handleResize]);
-  
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [props.imageUrl]);
+
   const onResizeStop = (
     elem: HTMLElement,
     position: Position,
@@ -526,6 +535,7 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         .sort((a, b) => b.w * b.h - a.w * a.h),
     );
     setFPBoxes(props.falsePositives.sort((a, b) => b.w * b.h - a.w * a.h));
+    setImageLoaded(true);
 
     return pad
   };
@@ -552,6 +562,9 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
   };
   
   const save = (verified: boolean) => {
+    if (!imageLoaded) {
+      return;
+    }
     props.save(bboxes, props.suggestions.map((s) => s.id), fpboxes.length === 0, verified ? props.labels : []);
   }
 
