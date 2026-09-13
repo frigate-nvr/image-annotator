@@ -11,6 +11,7 @@ interface IButtonProps {
   red?: boolean;
   green?: boolean;
   full?: boolean;
+  disabled?: boolean;
   children: ReactNode;
 }
 
@@ -25,6 +26,7 @@ interface IButtonProps {
  * @param props.red - Indicates if the button is a red button.
  * @param props.green - Indicates if the button is a green button.
  * @param props.full - Indicates if the button takes 100% width.
+ * @param props.disabled - Renders the button dimmed and non-interactive.
  * @param props.children - Children components.
  */
 const Button = (props: IButtonProps) => {
@@ -39,6 +41,7 @@ const Button = (props: IButtonProps) => {
     "text-white bg-red-500 border-gray-100 hover:bg-red-600 active:bg-red-500": props.red,
     "text-white bg-green-600 border-gray-100 hover:bg-green-700 active:bg-green-600": props.green,
     "w-full": props.full,
+    "opacity-50 cursor-not-allowed pointer-events-none": props.disabled,
   });
 
   return (

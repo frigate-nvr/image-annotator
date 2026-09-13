@@ -642,18 +642,24 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
               </div>
               <div className="flex-initial">
                 <button
+                  disabled={!imageLoaded}
+                  title={imageLoaded ? undefined : 'Waiting for the image to load'}
                   onClick={() => {
                     setState({ ...state, showVerify: true });
                   }}
                 >
-                  <Button sm>Verify &amp; Save</Button>
+                  <Button sm disabled={!imageLoaded}>
+                    Verify &amp; Save
+                  </Button>
                 </button>
                 <button
+                  disabled={!imageLoaded}
+                  title={imageLoaded ? undefined : 'Waiting for the image to load'}
                   onClick={() => {
                     save(false);
                   }}
                 >
-                  <Button green sm>
+                  <Button green sm disabled={!imageLoaded}>
                     Save
                   </Button>
                 </button>
@@ -863,12 +869,13 @@ const ImageAnnotator = (props: IImageAnnotationProps) => {
         button={
           <button
             type="button"
+            disabled={!imageLoaded}
             onClick={() => {
               save(true);
               setState({ ...state, showVerify: false });
             }}
           >
-            <Button sm green>
+            <Button sm green disabled={!imageLoaded}>
               Yes, all objects are labeled
             </Button>
           </button>
